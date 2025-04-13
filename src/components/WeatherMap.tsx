@@ -1,9 +1,10 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTheme } from '@/hooks/use-theme';
 import { Loader2, Map, Layers, CloudRain, Wind, Thermometer } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface WeatherMapProps {
   lat: number;
@@ -18,26 +19,42 @@ const WeatherMap = ({ lat, lon, location }: WeatherMapProps) => {
   const [mapType, setMapType] = useState<'temp' | 'rain' | 'wind'>('temp');
 
   useEffect(() => {
-    // This is a placeholder for an actual map integration
-    // In a real implementation, you would initialize a map library here
-    const loadMap = async () => {
-      try {
-        setIsMapLoading(true);
-        // Simulate map loading delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setIsMapLoading(false);
-      } catch (error) {
-        console.error("Error loading map:", error);
-        setIsMapLoading(false);
-      }
-    };
+    console.log('WeatherMap Props:', { lat, lon, location });
 
-    if (mapRef.current) {
-      loadMap();
+    if (!mapRef.current) {
+      console.error('Map container is not available.');
+      return;
     }
 
+    console.log('Initializing Leaflet map...');
+    const map = L.map(mapRef.current).setView([lat, lon], 10);
+
+    console.log('Adding base tile layer...');
+    const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    console.log('Adding weather layer:', mapType);
+    const weatherLayers = {
+      temp: L.tileLayer(`https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`),
+      rain: L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`),
+      wind: L.tileLayer(`https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`)
+    };
+
+    const selectedLayer = weatherLayers[mapType];
+    if (selectedLayer) {
+      console.log('Adding selected weather layer to map:', mapType);
+      console.log('Tile Layer URL:', weatherLayers[mapType]._url);
+      selectedLayer.addTo(map);
+    } else {
+      console.error('Invalid map type selected:', mapType);
+    }
+
+    setIsMapLoading(false);
+
     return () => {
-      // Clean up map instance if needed
+      console.log('Cleaning up map instance...');
+      map.remove();
     };
   }, [lat, lon, mapType]);
 
@@ -91,9 +108,15 @@ const WeatherMap = ({ lat, lon, location }: WeatherMapProps) => {
               <Wind className="h-4 w-4 mr-1" /> Wind
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="temp">{renderMap()}</TabsContent>
-          <TabsContent value="rain">{renderMap()}</TabsContent>
-          <TabsContent value="wind">{renderMap()}</TabsContent>
+          <TabsContent value="temp">
+            <div ref={mapRef} className="h-64 w-full rounded-lg overflow-hidden" />
+          </TabsContent>
+          <TabsContent value="rain">
+            <div ref={mapRef} className="h-64 w-full rounded-lg overflow-hidden" />
+          </TabsContent>
+          <TabsContent value="wind">
+            <div ref={mapRef} className="h-64 w-full rounded-lg overflow-hidden" />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
