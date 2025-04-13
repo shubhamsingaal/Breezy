@@ -2,19 +2,23 @@
 import { useState, useEffect } from 'react';
 import { getWeatherData } from '../services/weatherService';
 import { WeatherData } from '../types/weather';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import SearchBar from '../components/SearchBar';
 import LocationDisplay from '../components/LocationDisplay';
 import WeatherCard from '../components/WeatherCard';
 import WeatherDetails from '../components/WeatherDetails';
 import ForecastCard from '../components/ForecastCard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [location, setLocation] = useState<string>("San Francisco");
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const { toast: toastNotification } = useToast();
 
   useEffect(() => {
     fetchWeatherData(location);
@@ -23,14 +27,22 @@ const Index = () => {
   const fetchWeatherData = async (searchLocation: string) => {
     try {
       setLoading(true);
+      setError(null);
+      
       const data = await getWeatherData(searchLocation);
       setWeatherData(data);
       setLocation(searchLocation);
-    } catch (error) {
+      setLastUpdated(new Date());
+      
+      // Show success toast
+      toast.success("Weather data updated successfully");
+    } catch (error: any) {
       console.error("Error fetching weather data:", error);
-      toast({
+      setError(error.message || "Could not fetch weather data. Please try again.");
+      
+      toastNotification({
         title: "Error",
-        description: "Could not fetch weather data. Please try again.",
+        description: error.message || "Could not fetch weather data. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -42,22 +54,15 @@ const Index = () => {
     fetchWeatherData(newLocation);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-weather-blue" />
-        <p className="mt-4 text-gray-600">Loading weather data...</p>
-      </div>
-    );
-  }
+  const handleRefresh = () => {
+    fetchWeatherData(location);
+  };
 
-  if (!weatherData) {
+  if (loading && !weatherData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <p className="text-xl text-gray-600">No weather data available</p>
-        <div className="mt-4">
-          <SearchBar onSearch={handleSearch} />
-        </div>
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-gray-600">Loading weather data...</p>
       </div>
     );
   }
@@ -67,8 +72,26 @@ const Index = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           {weatherData && <LocationDisplay location={weatherData.location} />}
-          <SearchBar onSearch={handleSearch} />
+          <div className="flex flex-col md:flex-row items-end gap-2">
+            <SearchBar onSearch={handleSearch} isLoading={loading} />
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handleRefresh} 
+              disabled={loading} 
+              className="h-10 w-10"
+              title="Refresh weather data"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
+            {error}
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main weather card */}
@@ -87,9 +110,11 @@ const Index = () => {
           </div>
         </div>
         
-        <div className="text-center text-gray-400 text-sm mt-12">
-          <p>Note: This is demo data. Connect to a real weather API for actual weather information.</p>
-        </div>
+        {lastUpdated && (
+          <div className="text-center text-gray-500 text-sm mt-8">
+            <p>Last updated: {lastUpdated.toLocaleTimeString()}</p>
+          </div>
+        )}
       </div>
     </div>
   );

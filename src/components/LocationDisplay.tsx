@@ -1,5 +1,5 @@
 
-import { MapPin } from "lucide-react";
+import { MapPin, Clock } from "lucide-react";
 import { Location } from "../types/weather";
 
 interface LocationDisplayProps {
@@ -27,7 +27,7 @@ const LocationDisplay = ({ location }: LocationDisplayProps) => {
   return (
     <div className="flex flex-col mb-4 animate-fade-in">
       <div className="flex items-center">
-        <MapPin className="h-6 w-6 text-weather-blue mr-2" />
+        <MapPin className="h-6 w-6 text-primary mr-2" />
         <h1 className="text-3xl font-bold text-gray-800">
           {name}
           {region && `, ${region}`}
@@ -35,7 +35,10 @@ const LocationDisplay = ({ location }: LocationDisplayProps) => {
       </div>
       <div className="text-gray-600 ml-8">
         <p>{country}</p>
-        <p className="text-sm">{formattedDate} | {formattedTime}</p>
+        <div className="flex items-center text-sm mt-1">
+          <Clock className="h-4 w-4 mr-1" />
+          <span>{formattedDate} | {formattedTime}</span>
+        </div>
       </div>
     </div>
   );
