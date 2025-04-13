@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Locate, History, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/hooks/use-theme";
 import { 
   Select, 
   SelectContent, 
@@ -35,6 +36,7 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
     return saved ? JSON.parse(saved) : ["San Francisco", "New York", "London"];
   });
   const { toast } = useToast();
+  const { theme } = useTheme();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +48,7 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
         localStorage.setItem("searchHistory", JSON.stringify(updatedHistory));
       }
       onSearch(query);
+      setShowHistory(false);
     } else {
       toast({
         title: "Search Error",
@@ -79,7 +82,7 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
             placeholder="Search city or location..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-10 pr-8"
+            className={`h-10 pr-8 transition-all duration-300 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white placeholder:text-gray-400 focus-visible:ring-blue-400' : ''}`}
             disabled={isLoading}
             onFocus={() => setShowHistory(true)}
           />
@@ -87,7 +90,7 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
             <button
               type="button"
               onClick={handleClearInput}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className={`absolute right-2 top-1/2 -translate-y-1/2 ${theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
             >
               <X className="h-4 w-4" />
             </button>
@@ -98,7 +101,7 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
           value={searchFilter}
           onValueChange={setSearchFilter}
         >
-          <SelectTrigger className="w-28 h-10">
+          <SelectTrigger className={`w-28 h-10 transition-all duration-300 ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white' : ''}`}>
             <SelectValue placeholder="Filter" />
           </SelectTrigger>
           <SelectContent>
@@ -109,7 +112,12 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
           </SelectContent>
         </Select>
 
-        <Button type="submit" size="icon" className="h-10 w-10" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          size="icon" 
+          className={`h-10 w-10 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : ''} transition-all duration-300`} 
+          disabled={isLoading}
+        >
           {isLoading ? (
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
           ) : (
@@ -119,9 +127,9 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
 
         <Button
           type="button"
-          variant="outline"
+          variant={theme === 'dark' ? 'outline' : 'outline'}
           size="icon"
-          className="h-10 w-10"
+          className={`h-10 w-10 ${theme === 'dark' ? 'border-slate-600 hover:bg-slate-700 text-gray-200' : ''} transition-all duration-300`}
           onClick={handleGeolocate}
           disabled={isLoading}
           title="Use my current location"
@@ -132,9 +140,14 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
 
       {/* Recent searches */}
       {showHistory && searchHistory.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md border border-gray-100 animate-fade-in">
-          <Command>
-            <CommandInput placeholder="Search history..." />
+        <div className={`absolute z-10 w-full mt-1 ${
+          theme === 'dark' 
+            ? 'bg-slate-800 shadow-lg rounded-md border border-slate-700' 
+            : 'bg-white shadow-lg rounded-md border border-gray-100'
+          } animate-fade-in`}
+        >
+          <Command className={theme === 'dark' ? 'bg-slate-800 border-slate-700 rounded-md' : ''}>
+            <CommandInput placeholder="Search history..." className={theme === 'dark' ? 'text-gray-200' : ''} />
             <CommandList>
               <CommandEmpty>No results found.</CommandEmpty>
               <CommandGroup heading="Recent Searches">
@@ -142,9 +155,9 @@ const SearchBar = ({ onSearch, isLoading = false, onDetectLocation }: SearchBarP
                   <CommandItem 
                     key={index} 
                     onSelect={() => handleSelectHistory(item)}
-                    className="flex items-center cursor-pointer"
+                    className={`flex items-center cursor-pointer ${theme === 'dark' ? 'hover:bg-slate-700 text-gray-300' : ''}`}
                   >
-                    <History className="h-4 w-4 mr-2 text-gray-400" />
+                    <History className={`h-4 w-4 mr-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-400'}`} />
                     {item}
                   </CommandItem>
                 ))}

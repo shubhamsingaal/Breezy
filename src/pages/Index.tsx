@@ -4,11 +4,13 @@ import { getWeatherData } from '../services/weatherService';
 import { WeatherData } from '../types/weather';
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
+import { useTheme } from "@/hooks/use-theme";
 import SearchBar from '../components/SearchBar';
 import LocationDisplay from '../components/LocationDisplay';
 import WeatherCard from '../components/WeatherCard';
 import WeatherDetails from '../components/WeatherDetails';
 import ForecastCard from '../components/ForecastCard';
+import ThemeToggle from '../components/ThemeToggle';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -19,6 +21,7 @@ const Index = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
   const { toast: toastNotification } = useToast();
+  const { theme } = useTheme();
   
   // Use React Query for better caching and auto-refetching
   const { 
@@ -33,15 +36,17 @@ const Index = () => {
     refetchOnWindowFocus: false,
     refetchInterval: 1000 * 60 * 15, // Auto refresh every 15 minutes
     retry: 1,
-    onError: (error: any) => {
-      console.error("Error fetching weather data:", error);
-      setError(error.message || "Could not fetch weather data. Please try again.");
-      
-      toastNotification({
-        title: "Error",
-        description: error.message || "Could not fetch weather data. Please try again.",
-        variant: "destructive"
-      });
+    meta: {
+      onError: (error: any) => {
+        console.error("Error fetching weather data:", error);
+        setError(error.message || "Could not fetch weather data. Please try again.");
+        
+        toastNotification({
+          title: "Error",
+          description: error.message || "Could not fetch weather data. Please try again.",
+          variant: "destructive"
+        });
+      }
     },
     onSuccess: () => {
       setError(null);
@@ -95,28 +100,26 @@ const Index = () => {
     setUnitSystem(prev => prev === 'metric' ? 'imperial' : 'metric');
   }, []);
 
-  // Initial location detection on component mount
-  useEffect(() => {
-    // We're not auto-detecting on load to avoid permission popups without user action
-    // But we could uncomment this if desired:
-    // handleDetectLocation();
-  }, []);
-
   if (isLoading && !weatherData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-gray-600">Loading weather data...</p>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-light'} transition-colors duration-500`}>
+        <Loader2 className={`h-12 w-12 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-primary'}`} />
+        <p className={`mt-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Loading weather data...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white px-4 py-8 sm:px-6 sm:py-10">
+    <div className={`min-h-screen transition-colors duration-500 ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-to-b from-sky-50 to-white'} px-4 py-8 sm:px-6 sm:py-10`}>
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          {weatherData && <LocationDisplay location={weatherData.location} />}
-          <div className="flex flex-col md:flex-row items-end gap-2">
+          <div className="flex items-center justify-between w-full md:w-auto">
+            {weatherData && <LocationDisplay location={weatherData.location} />}
+            <div className="md:hidden">
+              <ThemeToggle />
+            </div>
+          </div>
+          <div className="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
             <SearchBar 
               onSearch={handleSearch} 
               isLoading={isFetching} 
@@ -124,10 +127,10 @@ const Index = () => {
             />
             <div className="flex gap-2">
               <Button 
-                variant="outline" 
+                variant={theme === 'dark' ? "outline" : "default"}
                 size="sm"
                 onClick={toggleUnitSystem}
-                className="h-10"
+                className={`h-10 transition-all duration-300 ${theme === 'dark' ? 'hover:bg-slate-700' : ''}`}
               >
                 {unitSystem === 'metric' ? '°C' : '°F'}
               </Button>
@@ -136,17 +139,20 @@ const Index = () => {
                 size="icon" 
                 onClick={handleRefresh} 
                 disabled={isFetching} 
-                className="h-10 w-10"
+                className={`h-10 w-10 transition-all duration-300 ${theme === 'dark' ? 'hover:bg-slate-700' : ''}`}
                 title="Refresh weather data"
               >
                 <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
               </Button>
+              <div className="hidden md:block">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </div>
         
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
+          <div className={`${theme === 'dark' ? 'bg-red-900/30 border-red-800 text-red-200' : 'bg-red-50 border-red-200 text-red-700'} border px-4 py-3 rounded-md mb-6 animate-fade-in`}>
             {error}
           </div>
         )}
@@ -155,36 +161,42 @@ const Index = () => {
           {/* Main weather card */}
           <div className="lg:col-span-5">
             {weatherData && (
-              <WeatherCard 
-                current={weatherData.current} 
-                unitSystem={unitSystem} 
-              />
+              <div className="animate-slide-up">
+                <WeatherCard 
+                  current={weatherData.current} 
+                  unitSystem={unitSystem} 
+                />
+              </div>
             )}
           </div>
           
           {/* Weather details */}
           <div className="lg:col-span-7">
             {weatherData && (
-              <WeatherDetails 
-                current={weatherData.current} 
-                unitSystem={unitSystem} 
-              />
+              <div className="animate-slide-up" style={{ animationDelay: "100ms" }}>
+                <WeatherDetails 
+                  current={weatherData.current} 
+                  unitSystem={unitSystem} 
+                />
+              </div>
             )}
           </div>
           
           {/* Forecast */}
           <div className="lg:col-span-12">
             {weatherData && (
-              <ForecastCard 
-                forecast={weatherData.forecast.forecastday} 
-                unitSystem={unitSystem}
-              />
+              <div className="animate-slide-up" style={{ animationDelay: "200ms" }}>
+                <ForecastCard 
+                  forecast={weatherData.forecast.forecastday} 
+                  unitSystem={unitSystem}
+                />
+              </div>
             )}
           </div>
         </div>
         
         {lastUpdated && (
-          <div className="text-center text-gray-500 text-sm mt-8">
+          <div className={`text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-sm mt-8 animate-fade-in`} style={{ animationDelay: "300ms" }}>
             <p>Last updated: {lastUpdated.toLocaleTimeString()}</p>
           </div>
         )}
