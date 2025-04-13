@@ -1,7 +1,7 @@
 
 import { WeatherData } from "../types/weather";
 
-const API_KEY = "bbe5604f40f844298fc70913251304";
+const API_KEY = "c2bd3b0b6bb14034b3a81330251304";
 const BASE_URL = "https://api.weatherapi.com/v1";
 
 // Cache mechanism to reduce API calls
