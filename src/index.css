@@ -74,6 +74,7 @@
 
   body {
     @apply bg-background text-foreground transition-colors duration-300;
+    scroll-behavior: smooth;
   }
 
   .weather-card {
@@ -82,6 +83,27 @@
 
   .glass-card {
     @apply bg-card/80 backdrop-blur-sm rounded-2xl shadow-md border border-border/20;
+  }
+  
+  /* Weather-specific styles */
+  .sunny-bg {
+    @apply bg-gradient-to-br from-amber-100 via-amber-50 to-sky-200;
+  }
+  
+  .cloudy-bg {
+    @apply bg-gradient-to-br from-gray-200 via-gray-100 to-blue-50;
+  }
+  
+  .rainy-bg {
+    @apply bg-gradient-to-br from-blue-200 via-blue-100 to-gray-200;
+  }
+  
+  .stormy-bg {
+    @apply bg-gradient-to-br from-gray-400 via-gray-300 to-blue-200;
+  }
+  
+  .night-bg {
+    @apply bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900;
   }
 }
 
@@ -104,6 +126,14 @@
   
   .animate-pulse-slow {
     animation: pulseSlow 3s ease-in-out infinite;
+  }
+  
+  .glass-morphism {
+    @apply backdrop-blur-md bg-white/10 border border-white/20 shadow-lg;
+  }
+  
+  .dark .glass-morphism {
+    @apply bg-slate-800/50 border-slate-700/50;
   }
   
   @keyframes animateIn {
@@ -157,6 +187,65 @@
     }
     50% {
       opacity: 0.8;
+    }
+  }
+  
+  /* Rain animation */
+  .rain {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .rain::before {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 200%;
+    background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255, 0.2) 100%);
+    background-size: 10px 15px;
+    animation: rain 0.6s linear infinite;
+    transform: rotate(10deg);
+    pointer-events: none;
+  }
+  
+  @keyframes rain {
+    0% {
+      background-position: 0px 0px;
+    }
+    100% {
+      background-position: 10px 30px;
+    }
+  }
+  
+  /* Snow animation */
+  .snow {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .snow::before {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 200%;
+    background: radial-gradient(circle, white 10%, transparent 10%);
+    background-size: 20px 20px;
+    animation: snow 6s linear infinite;
+    pointer-events: none;
+  }
+  
+  @keyframes snow {
+    0% {
+      background-position: 0px 0px, 0px 0px;
+      opacity: 0.5;
+    }
+    100% {
+      background-position: 500px 500px, 400px 400px;
+      opacity: 0.1;
     }
   }
 }

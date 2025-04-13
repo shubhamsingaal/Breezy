@@ -69,7 +69,9 @@ export default {
 					'dark-blue': '#0369A1',
 					'sunny': '#FBBF24',
 					'cloudy': '#94A3B8',
-					'rainy': '#38BDF8'
+					'rainy': '#38BDF8',
+					'sunset': '#F59E0B',
+					'night': '#1E3A8A'
 				}
 			},
 			borderRadius: {
@@ -127,6 +129,22 @@ export default {
 				'float': {
 					'0%, 100%': { transform: 'translateY(0)' },
 					'50%': { transform: 'translateY(-10px)' }
+				},
+				'bounce-gentle': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-5px)' }
+				},
+				'ripple': {
+					'0%': { transform: 'scale(0.95)', opacity: '1' },
+					'100%': { transform: 'scale(2)', opacity: '0' }
+				},
+				'glow': {
+					'0%, 100%': { boxShadow: '0 0 5px rgba(66, 153, 225, 0.5)' },
+					'50%': { boxShadow: '0 0 20px rgba(66, 153, 225, 0.8)' }
+				},
+				'rotate-slow': {
+					'0%': { transform: 'rotate(0deg)' },
+					'100%': { transform: 'rotate(360deg)' }
 				}
 			},
 			animation: {
@@ -138,13 +156,21 @@ export default {
 				'slide-up': 'slide-up 0.5s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out',
 				'pulse-slow': 'pulse-slow 3s ease-in-out infinite',
-				'float': 'float 3s ease-in-out infinite'
+				'float': 'float 3s ease-in-out infinite',
+				'bounce-gentle': 'bounce-gentle 2s ease-in-out infinite',
+				'ripple': 'ripple 2s ease-out infinite',
+				'glow': 'glow 2s ease-in-out infinite',
+				'rotate-slow': 'rotate-slow 10s linear infinite'
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
 				'gradient-weather': 'linear-gradient(to right, #0EA5E9, #38BDF8)',
 				'gradient-dark': 'linear-gradient(to bottom, #1E293B, #0F172A)',
-				'gradient-light': 'linear-gradient(to bottom, #F0F9FF, #E0F2FE)'
+				'gradient-light': 'linear-gradient(to bottom, #F0F9FF, #E0F2FE)',
+				'gradient-sunset': 'linear-gradient(to right bottom, #FDE68A, #FEA3B4)',
+				'gradient-night': 'linear-gradient(to bottom, #1E3A8A, #1E293B)',
+				'gradient-rain': 'linear-gradient(to bottom, #1E40AF, #3B82F6)',
+				'noise-pattern': 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")'
 			}
 		}
 	},

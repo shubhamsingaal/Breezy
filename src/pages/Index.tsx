@@ -11,6 +11,11 @@ import WeatherCard from '../components/WeatherCard';
 import WeatherDetails from '../components/WeatherDetails';
 import ForecastCard from '../components/ForecastCard';
 import ThemeToggle from '../components/ThemeToggle';
+import WeatherMap from '../components/WeatherMap';
+import AirQuality from '../components/AirQuality';
+import SunriseSunset from '../components/SunriseSunset';
+import UVIndex from '../components/UVIndex';
+import Footer from '../components/Footer';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -48,10 +53,12 @@ const Index = () => {
         });
       }
     },
-    onSuccess: () => {
-      setError(null);
-      setLastUpdated(new Date());
-      toast.success("Weather data updated successfully");
+    onSettled: (data) => {
+      if (data) {
+        setError(null);
+        setLastUpdated(new Date());
+        toast.success("Weather data updated successfully");
+      }
     }
   });
 
@@ -182,6 +189,37 @@ const Index = () => {
             )}
           </div>
           
+          {/* Weather map */}
+          <div className="lg:col-span-12">
+            {weatherData && (
+              <WeatherMap 
+                lat={weatherData.location.lat} 
+                lon={weatherData.location.lon}
+                location={weatherData.location.name}
+              />
+            )}
+          </div>
+          
+          {/* Additional weather info cards */}
+          <div className="lg:col-span-4">
+            {weatherData && weatherData.forecast.forecastday[0] && (
+              <SunriseSunset 
+                astroData={weatherData.forecast.forecastday[0].astro} 
+                localTime={weatherData.location.localtime}
+              />
+            )}
+          </div>
+          
+          <div className="lg:col-span-4">
+            {weatherData && (
+              <UVIndex uvIndex={weatherData.current.uv} />
+            )}
+          </div>
+          
+          <div className="lg:col-span-4">
+            <AirQuality />
+          </div>
+          
           {/* Forecast */}
           <div className="lg:col-span-12">
             {weatherData && (
@@ -200,6 +238,9 @@ const Index = () => {
             <p>Last updated: {lastUpdated.toLocaleTimeString()}</p>
           </div>
         )}
+        
+        {/* Footer with attribution */}
+        <Footer />
       </div>
     </div>
   );
