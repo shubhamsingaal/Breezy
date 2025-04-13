@@ -1,20 +1,43 @@
 
 import { WeatherData } from "../types/weather";
 
-const API_KEY = "bbe5604f40f844298fc70913251304"; // Real API key
+const API_KEY = "bbe5604f40f844298fc70913251304";
 const BASE_URL = "https://api.weatherapi.com/v1";
+
+// Cache mechanism to reduce API calls
+const weatherCache = new Map();
+const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutes
 
 export async function getWeatherData(location: string): Promise<WeatherData> {
   try {
-    // Make a real API call using the provided key
-    const response = await fetch(`${BASE_URL}/forecast.json?key=${API_KEY}&q=${location}&days=7&aqi=no&alerts=no`);
+    // Check if we have a valid cached response
+    const cacheKey = `weather_${location}`;
+    const cachedData = weatherCache.get(cacheKey);
+    
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
+      console.log("Using cached weather data for", location);
+      return cachedData.data;
+    }
+    
+    // Make API call with error handling
+    const response = await fetch(
+      `${BASE_URL}/forecast.json?key=${API_KEY}&q=${encodeURIComponent(location)}&days=7&aqi=no&alerts=yes`
+    );
     
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error?.message || 'Weather data not available');
     }
     
-    return await response.json();
+    const data = await response.json();
+    
+    // Cache the fresh data
+    weatherCache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    });
+    
+    return data;
   } catch (error) {
     console.error("Error fetching weather data:", error);
     throw error;
@@ -66,4 +89,20 @@ export function getWeatherIcon(code: number, isDay: boolean = true): string {
     default:
       return isDay ? "cloud-sun" : "cloud-moon";
   }
+}
+
+// Helper function to get user's current location
+export function getCurrentLocation(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by your browser"));
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 600000 // 10 minutes
+    });
+  });
 }
