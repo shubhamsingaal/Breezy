@@ -47,24 +47,28 @@ const Index = () => {
     refetchOnWindowFocus: false,
     refetchInterval: 1000 * 60 * 15, // Auto refresh every 15 minutes
     retry: 1,
-    onSettled: (data, error) => {
-      if (data) {
-        setError(null);
-        setLastUpdated(new Date());
-        toast.success("Weather data updated successfully");
-      }
-      if (error) {
+    meta: {
+      onError: (error: Error) => {
         console.error("Error fetching weather data:", error);
-        setError((error as Error).message || "Could not fetch weather data. Please try again.");
+        setError(error.message || "Could not fetch weather data. Please try again.");
         
         toastNotification({
           title: "Error",
-          description: (error as Error).message || "Could not fetch weather data. Please try again.",
+          description: error.message || "Could not fetch weather data. Please try again.",
           variant: "destructive"
         });
       }
-    },
+    }
   });
+
+  // Update lastUpdated and show toast on successful data fetch
+  useEffect(() => {
+    if (weatherData) {
+      setError(null);
+      setLastUpdated(new Date());
+      toast.success("Weather data updated successfully");
+    }
+  }, [weatherData]);
 
   const handleSearch = useCallback((searchLocation: string) => {
     setLocation(searchLocation);
@@ -221,7 +225,7 @@ const Index = () => {
           </div>
           
           {/* Weather alerts if any */}
-          {weatherData?.alerts?.alert.length > 0 && (
+          {weatherData?.alerts && weatherData.alerts.alert?.length > 0 && (
             <div className="lg:col-span-12">
               <WeatherAlerts alerts={weatherData.alerts} />
             </div>

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { HeartFilled, Heart, Plus } from 'lucide-react';
+import { Heart, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,7 +25,7 @@ const FavLocations = ({ favorites, currentLocation, onSelect, onAdd, onRemove }:
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg flex items-center">
-            <HeartFilled className={`mr-2 h-5 w-5 text-red-500`} />
+            <Heart className={`mr-2 h-5 w-5 text-red-500 ${isFavorite ? 'fill-red-500' : ''}`} />
             Favorite Locations
           </CardTitle>
           <div className="flex gap-2">
@@ -38,7 +38,7 @@ const FavLocations = ({ favorites, currentLocation, onSelect, onAdd, onRemove }:
             >
               {isFavorite ? (
                 <>
-                  <HeartFilled className="h-4 w-4 mr-1 text-red-500" /> Saved
+                  <Heart className="h-4 w-4 mr-1 text-red-500 fill-red-500" /> Saved
                 </>
               ) : (
                 <>

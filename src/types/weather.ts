@@ -3,6 +3,7 @@ export interface WeatherData {
   location: Location;
   current: CurrentWeather;
   forecast: Forecast;
+  alerts?: Alert;
 }
 
 export interface Location {
@@ -122,4 +123,24 @@ export interface HourForecast {
   gust_mph: number;
   gust_kph: number;
   uv: number;
+}
+
+export interface Alert {
+  alert: AlertItem[];
+}
+
+export interface AlertItem {
+  headline: string;
+  msgtype: string;
+  severity: string;
+  urgency: string;
+  areas: string;
+  category: string;
+  certainty: string;
+  event: string;
+  note: string;
+  effective: string;
+  expires: string;
+  desc: string;
+  instruction: string;
 }

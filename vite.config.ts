@@ -12,7 +12,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     // Pre-bundle Leaflet to avoid import issues
-    include: ['leaflet'],
+    include: ['leaflet', 'lucide-react'],
   },
   build: {
     // Make sure CSS files from packages like Leaflet are included in the build
@@ -25,4 +25,7 @@ export default defineConfig({
       }
     }
   },
+  server: {
+    port: 8080
+  }
 });
