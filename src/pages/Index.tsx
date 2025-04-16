@@ -22,6 +22,10 @@ import WeatherAlerts from '../components/WeatherAlerts';
 import FavLocations from '../components/FavLocations';
 import VisibilityInfo from '../components/VisibilityInfo';
 import MoonPhase from '../components/MoonPhase';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const { theme } = useTheme();
