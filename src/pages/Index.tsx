@@ -1,9 +1,11 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { useTheme } from '@/hooks/use-theme';
+import SplashScreen from '@/components/SplashScreen';
 import { getWeatherData } from '../services/weatherService';
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
-import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/hooks/use-auth-context";
 import SearchBar from '../components/SearchBar';
 import LocationDisplay from '../components/LocationDisplay';
@@ -15,18 +17,15 @@ import WeatherMap from '../components/WeatherMap';
 import AirQuality from '../components/AirQuality';
 import SunriseSunset from '../components/SunriseSunset';
 import UVIndex from '../components/UVIndex';
-import Footer from '../components/Footer';
-import { Loader2, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
 import WeatherHighlights from '../components/WeatherHighlights';
 import WeatherAlerts from '../components/WeatherAlerts';
 import FavLocations from '../components/FavLocations';
 import VisibilityInfo from '../components/VisibilityInfo';
 import MoonPhase from '../components/MoonPhase';
-import Header from '../components/Header';
 
 const Index = () => {
+  const { theme } = useTheme();
+  const [showSplash, setShowSplash] = useState(true);
   const [location, setLocation] = useState<string>("San Francisco");
   const [error, setError] = useState<string | null>(null);
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
@@ -37,10 +36,8 @@ const Index = () => {
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   const [pageLoading, setPageLoading] = useState<boolean>(true);
   const { toast: toastNotification } = useToast();
-  const { theme } = useTheme();
   const { user, settings, saveUserSettings } = useAuth();
   
-  // Apply user settings if available
   useEffect(() => {
     if (user && settings) {
       if (settings.unitSystem) {
@@ -75,14 +72,12 @@ const Index = () => {
     }
   });
 
-  // Update toast on successful data fetch
   useEffect(() => {
     if (weatherData && !isDataLoaded) {
       setError(null);
       setIsDataLoaded(true);
       toast.success("Weather data updated successfully");
       
-      // Check for weather alerts and show notification if enabled
       if (user && settings.notificationEnabled && weatherData.alerts?.alert?.length > 0) {
         const mostSevereAlert = weatherData.alerts.alert[0];
         toastNotification({
@@ -94,7 +89,6 @@ const Index = () => {
     }
   }, [weatherData, isDataLoaded, user, settings, toastNotification]);
 
-  // Page loading animation
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoading(false);
@@ -151,7 +145,6 @@ const Index = () => {
     const newUnitSystem = unitSystem === 'metric' ? 'imperial' : 'metric';
     setUnitSystem(newUnitSystem);
     
-    // Save preference if user is logged in
     if (user) {
       saveUserSettings({ unitSystem: newUnitSystem });
     }
@@ -173,188 +166,184 @@ const Index = () => {
     toast.success(`Removed ${locationName} from favorites`);
   }, [favorites]);
 
-  if (pageLoading || (isLoading && !weatherData)) {
-    return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-light'} transition-colors duration-700`}>
-        <div className="animate-bounce-gentle">
-          <Loader2 className={`h-16 w-16 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-primary'}`} />
-        </div>
-        <p className={`mt-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} animate-fade-in`}>Loading weather data...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className={`min-h-screen transition-all duration-700 ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-to-b from-sky-50 to-white'} px-4 pb-8 pt-16 sm:px-6 sm:pb-10`}>
-      {/* Header */}
-      <Header />
-      
-      <div className="max-w-7xl mx-auto animate-fade-in transition-all mt-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div className="flex items-center justify-between w-full md:w-auto">
-            {weatherData && <LocationDisplay location={weatherData.location} />}
-            <div className="md:hidden">
-              <ThemeToggle />
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
-            <SearchBar 
-              onSearch={handleSearch} 
-              isLoading={isFetching} 
-              onDetectLocation={handleDetectLocation}
-            />
-            <div className="flex gap-2">
-              <Button 
-                variant={theme === 'dark' ? "outline" : "default"}
-                size="sm"
-                onClick={toggleUnitSystem}
-                className={`h-10 transition-all duration-300 ${theme === 'dark' ? 'hover:bg-slate-700' : ''}`}
-              >
-                {unitSystem === 'metric' ? '°C' : '°F'}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={handleRefresh} 
-                disabled={isFetching} 
-                className={`h-10 w-10 transition-all duration-300 ${theme === 'dark' ? 'hover:bg-slate-700' : ''}`}
-                title="Refresh weather data"
-              >
-                <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-              </Button>
-              <div className="hidden md:block">
-                <ThemeToggle />
+    <>
+      {showSplash ? (
+        <SplashScreen onFinish={() => setShowSplash(false)} />
+      ) : (
+        <div className={theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-light'}>
+          <Header />
+          <main className="pt-20 min-h-screen animate-fade-in">
+            {pageLoading || (isLoading && !weatherData) ? (
+              <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-light'} transition-colors duration-700`}>
+                <div className="animate-bounce-gentle">
+                  <Loader2 className={`h-16 w-16 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-primary'}`} />
+                </div>
+                <p className={`mt-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} animate-fade-in`}>Loading weather data...</p>
               </div>
-            </div>
-          </div>
+            ) : (
+              <div className={`min-h-screen transition-all duration-700 ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-to-b from-sky-50 to-white'} px-4 pb-8 pt-16 sm:px-6 sm:pb-10`}>
+                <div className="max-w-7xl mx-auto animate-fade-in transition-all mt-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div className="flex items-center justify-between w-full md:w-auto">
+                      {weatherData && <LocationDisplay location={weatherData.location} />}
+                      <div className="md:hidden">
+                        <ThemeToggle />
+                      </div>
+                    </div>
+                    <div className="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
+                      <SearchBar 
+                        onSearch={handleSearch} 
+                        isLoading={isFetching} 
+                        onDetectLocation={handleDetectLocation}
+                      />
+                      <div className="flex gap-2">
+                        <Button 
+                          variant={theme === 'dark' ? "outline" : "default"}
+                          size="sm"
+                          onClick={toggleUnitSystem}
+                          className={`h-10 transition-all duration-300 ${theme === 'dark' ? 'hover:bg-slate-700' : ''}`}
+                        >
+                          {unitSystem === 'metric' ? '°C' : '°F'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          onClick={handleRefresh} 
+                          disabled={isFetching} 
+                          className={`h-10 w-10 transition-all duration-300 ${theme === 'dark' ? 'hover:bg-slate-700' : ''}`}
+                          title="Refresh weather data"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                        </Button>
+                        <div className="hidden md:block">
+                          <ThemeToggle />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {error && (
+                    <div className={`${theme === 'dark' ? 'bg-red-900/30 border-red-800 text-red-200' : 'bg-red-50 border-red-200 text-red-700'} border px-4 py-3 rounded-md mb-6 animate-fade-in`}>
+                      {error}
+                    </div>
+                  )}
+                  
+                  <div className="mb-6 transition-all duration-500">
+                    <FavLocations 
+                      favorites={favorites} 
+                      currentLocation={weatherData?.location.name || ""} 
+                      onSelect={handleSearch}
+                      onAdd={() => weatherData && addToFavorites(weatherData.location.name)}
+                      onRemove={removeFromFavorites}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-5">
+                      {weatherData && (
+                        <div className="animate-slide-up">
+                          <WeatherCard 
+                            current={weatherData.current} 
+                            unitSystem={unitSystem} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="lg:col-span-7">
+                      {weatherData && (
+                        <div className="animate-slide-up" style={{ animationDelay: "100ms" }}>
+                          <WeatherDetails 
+                            current={weatherData.current} 
+                            unitSystem={unitSystem} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {weatherData?.alerts && weatherData.alerts.alert?.length > 0 && (
+                      <div className="lg:col-span-12">
+                        <WeatherAlerts alerts={weatherData.alerts} />
+                      </div>
+                    )}
+                    
+                    <div className="lg:col-span-12">
+                      {weatherData && (
+                        <WeatherHighlights 
+                          current={weatherData.current}
+                          forecast={weatherData.forecast}
+                          unitSystem={unitSystem}
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="lg:col-span-12">
+                      {weatherData && (
+                        <WeatherMap 
+                          lat={weatherData.location.lat} 
+                          lon={weatherData.location.lon}
+                          location={weatherData.location.name}
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="lg:col-span-4">
+                      {weatherData && weatherData.forecast.forecastday[0] && (
+                        <SunriseSunset 
+                          astroData={weatherData.forecast.forecastday[0].astro} 
+                          localTime={weatherData.location.localtime}
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="lg:col-span-4">
+                      {weatherData && (
+                        <UVIndex uvIndex={weatherData.current.uv} />
+                      )}
+                    </div>
+                    
+                    <div className="lg:col-span-4">
+                      <AirQuality />
+                    </div>
+                    
+                    <div className="lg:col-span-6">
+                      {weatherData && (
+                        <VisibilityInfo 
+                          visibility={unitSystem === 'metric' ? weatherData.current.vis_km : weatherData.current.vis_miles}
+                          unit={unitSystem === 'metric' ? 'km' : 'miles'}
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="lg:col-span-6">
+                      {weatherData && weatherData.forecast.forecastday[0] && (
+                        <MoonPhase 
+                          astroData={weatherData.forecast.forecastday[0].astro}
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="lg:col-span-12">
+                      {weatherData && (
+                        <div className="animate-slide-up" style={{ animationDelay: "200ms" }}>
+                          <ForecastCard 
+                            forecast={weatherData.forecast.forecastday} 
+                            unitSystem={unitSystem}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Footer />
+                </div>
+              </div>
+            )}
+          </main>
         </div>
-        
-        {error && (
-          <div className={`${theme === 'dark' ? 'bg-red-900/30 border-red-800 text-red-200' : 'bg-red-50 border-red-200 text-red-700'} border px-4 py-3 rounded-md mb-6 animate-fade-in`}>
-            {error}
-          </div>
-        )}
-
-        {/* Favorites section */}
-        <div className="mb-6 transition-all duration-500">
-          <FavLocations 
-            favorites={favorites} 
-            currentLocation={weatherData?.location.name || ""} 
-            onSelect={handleSearch}
-            onAdd={() => weatherData && addToFavorites(weatherData.location.name)}
-            onRemove={removeFromFavorites}
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Main weather card */}
-          <div className="lg:col-span-5">
-            {weatherData && (
-              <div className="animate-slide-up">
-                <WeatherCard 
-                  current={weatherData.current} 
-                  unitSystem={unitSystem} 
-                />
-              </div>
-            )}
-          </div>
-          
-          {/* Weather details */}
-          <div className="lg:col-span-7">
-            {weatherData && (
-              <div className="animate-slide-up" style={{ animationDelay: "100ms" }}>
-                <WeatherDetails 
-                  current={weatherData.current} 
-                  unitSystem={unitSystem} 
-                />
-              </div>
-            )}
-          </div>
-          
-          {/* Weather alerts if any */}
-          {weatherData?.alerts && weatherData.alerts.alert?.length > 0 && (
-            <div className="lg:col-span-12">
-              <WeatherAlerts alerts={weatherData.alerts} />
-            </div>
-          )}
-          
-          {/* Weather highlights */}
-          <div className="lg:col-span-12">
-            {weatherData && (
-              <WeatherHighlights 
-                current={weatherData.current}
-                forecast={weatherData.forecast}
-                unitSystem={unitSystem}
-              />
-            )}
-          </div>
-          
-          {/* Weather map */}
-          <div className="lg:col-span-12">
-            {weatherData && (
-              <WeatherMap 
-                lat={weatherData.location.lat} 
-                lon={weatherData.location.lon}
-                location={weatherData.location.name}
-              />
-            )}
-          </div>
-          
-          {/* Additional weather info cards */}
-          <div className="lg:col-span-4">
-            {weatherData && weatherData.forecast.forecastday[0] && (
-              <SunriseSunset 
-                astroData={weatherData.forecast.forecastday[0].astro} 
-                localTime={weatherData.location.localtime}
-              />
-            )}
-          </div>
-          
-          <div className="lg:col-span-4">
-            {weatherData && (
-              <UVIndex uvIndex={weatherData.current.uv} />
-            )}
-          </div>
-          
-          <div className="lg:col-span-4">
-            <AirQuality />
-          </div>
-          
-          {/* Additional components */}
-          <div className="lg:col-span-6">
-            {weatherData && (
-              <VisibilityInfo 
-                visibility={unitSystem === 'metric' ? weatherData.current.vis_km : weatherData.current.vis_miles}
-                unit={unitSystem === 'metric' ? 'km' : 'miles'}
-              />
-            )}
-          </div>
-          
-          <div className="lg:col-span-6">
-            {weatherData && weatherData.forecast.forecastday[0] && (
-              <MoonPhase 
-                astroData={weatherData.forecast.forecastday[0].astro}
-              />
-            )}
-          </div>
-          
-          {/* Forecast */}
-          <div className="lg:col-span-12">
-            {weatherData && (
-              <div className="animate-slide-up" style={{ animationDelay: "200ms" }}>
-                <ForecastCard 
-                  forecast={weatherData.forecast.forecastday} 
-                  unitSystem={unitSystem}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Footer with attribution */}
-        <Footer />
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 

@@ -9,11 +9,12 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/hooks/use-auth-context';
-import { Cloud, CloudLightning, Loader2, LogIn, Mail, User, Wind } from 'lucide-react';
+import { Cloud, CloudLightning, Loader2, LogIn, Mail, User, Wind, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTheme } from '@/hooks/use-theme';
+import PhoneAuth from './PhoneAuth';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -82,12 +83,13 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="register">Register</TabsTrigger>
+            <TabsTrigger value="phone">Phone</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="login" className="mt-4">
+          <TabsContent value="login" className="mt-4 animate-fade-in">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -166,7 +168,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             </Button>
           </TabsContent>
           
-          <TabsContent value="register" className="mt-4">
+          <TabsContent value="register" className="mt-4 animate-fade-in">
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="register-email">Email</Label>
@@ -245,6 +247,10 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
               </svg>
               Google
             </Button>
+          </TabsContent>
+          
+          <TabsContent value="phone" className="mt-4 animate-fade-in">
+            <PhoneAuth />
           </TabsContent>
         </Tabs>
       </DialogContent>

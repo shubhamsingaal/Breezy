@@ -18,8 +18,15 @@ import {
   getDoc, 
   updateDoc, 
   arrayUnion, 
-  arrayRemove 
+  arrayRemove,
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  serverTimestamp
 } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -37,6 +44,7 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const functions = getFunctions(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Authentication functions
@@ -120,7 +128,8 @@ export const saveUserSettings = async (
     unitSystem?: 'metric' | 'imperial',
     theme?: 'light' | 'dark',
     notificationEnabled?: boolean,
-    email?: string
+    email?: string,
+    phoneVerified?: boolean
   }
 ) => {
   try {
@@ -144,5 +153,111 @@ export const getUserSettings = async (userId: string) => {
   } catch (error) {
     console.error("Error getting settings:", error);
     return {};
+  }
+};
+
+// Phone verification functions
+export const sendVerificationCode = async (userId: string, phoneNumber: string): Promise<boolean> => {
+  try {
+    // In a real implementation, you would call a Firebase Cloud Function to send SMS
+    // For now, we'll simulate it by storing the verification attempt in Firestore
+    // with a mock verification code (e.g. 123456)
+    
+    // Store the verification code in Firestore (in a real app, this would be done securely by a Cloud Function)
+    const verificationCode = "123456"; // In production, generate this randomly
+    
+    await setDoc(doc(db, "verifications", userId), {
+      phoneNumber,
+      verificationCode,
+      createdAt: serverTimestamp()
+    });
+    
+    console.log("Verification code sent:", verificationCode);
+    
+    return true;
+  } catch (error) {
+    console.error("Error sending verification code:", error);
+    return false;
+  }
+};
+
+export const verifyPhoneNumber = async (userId: string, phoneNumber: string, code: string): Promise<boolean> => {
+  try {
+    // In a real implementation, you would verify this with a Firebase Cloud Function
+    // For now, we'll check against our stored mock code
+    const verificationDoc = await getDoc(doc(db, "verifications", userId));
+    
+    if (!verificationDoc.exists()) {
+      return false;
+    }
+    
+    const verificationData = verificationDoc.data();
+    const isCorrectCode = verificationData.verificationCode === code && 
+                         verificationData.phoneNumber === phoneNumber;
+    
+    if (isCorrectCode) {
+      // Update user profile with verified phone
+      await updateDoc(doc(db, "users", userId), {
+        phoneNumber,
+        phoneVerified: true
+      });
+      
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Error verifying phone:", error);
+    return false;
+  }
+};
+
+// Email notification functions
+export const sendWelcomeEmail = async (email: string, name: string): Promise<boolean> => {
+  try {
+    // In a real implementation, you would call a Firebase Cloud Function to send the email
+    // For now, we'll simulate it by logging the email content
+    console.log(`Welcome email would be sent to ${email} for ${name}`);
+    
+    // In a real implementation, you would use Firebase Cloud Functions:
+    // const sendWelcomeEmailFn = httpsCallable(functions, 'sendWelcomeEmail');
+    // await sendWelcomeEmailFn({ email, name });
+    
+    return true;
+  } catch (error) {
+    console.error("Error sending welcome email:", error);
+    return false;
+  }
+};
+
+// Weather alert functions
+export const subscribeToWeatherAlerts = async (userId: string, locations: string[]): Promise<boolean> => {
+  try {
+    await setDoc(doc(db, "weatherAlerts", userId), {
+      locations,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error subscribing to weather alerts:", error);
+    return false;
+  }
+};
+
+export const sendWeatherAlert = async (userId: string, location: string, alertText: string): Promise<boolean> => {
+  try {
+    // In a real implementation, you would call a Firebase Cloud Function to send the email
+    // For demonstration purposes, we'll just store the alert in Firestore
+    await addDoc(collection(db, "sentAlerts"), {
+      userId,
+      location,
+      alertText,
+      sentAt: serverTimestamp()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error sending weather alert:", error);
+    return false;
   }
 };

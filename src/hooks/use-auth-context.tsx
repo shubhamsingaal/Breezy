@@ -12,7 +12,10 @@ import {
   addToFavorites as addFavorite,
   removeFromFavorites as removeFavorite,
   getUserSettings,
-  saveUserSettings as updateUserSettings
+  saveUserSettings as updateUserSettings,
+  sendVerificationCode as sendPhoneVerificationCode,
+  verifyPhoneNumber as verifyUserPhoneNumber,
+  sendWelcomeEmail
 } from '../services/firebaseService';
 import { User } from 'firebase/auth';
 import { toast } from "sonner";
@@ -26,6 +29,7 @@ type AuthContextType = {
     theme?: 'light' | 'dark';
     notificationEnabled?: boolean;
     email?: string;
+    phoneVerified?: boolean;
   };
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string) => Promise<boolean>;
@@ -33,11 +37,14 @@ type AuthContextType = {
   signInWithGoogle: () => Promise<boolean>;
   addToFavorites: (location: string) => Promise<boolean>;
   removeFromFavorites: (location: string) => Promise<boolean>;
+  sendVerificationCode: (phoneNumber: string) => Promise<boolean>;
+  verifyPhoneNumber: (phoneNumber: string, code: string) => Promise<boolean>;
   saveUserSettings: (settings: {
     unitSystem?: 'metric' | 'imperial';
     theme?: 'light' | 'dark';
     notificationEnabled?: boolean;
     email?: string;
+    phoneVerified?: boolean;
   }) => Promise<boolean>;
 };
 
@@ -52,6 +59,8 @@ const AuthContext = createContext<AuthContextType>({
   signInWithGoogle: async () => false,
   addToFavorites: async () => false,
   removeFromFavorites: async () => false,
+  sendVerificationCode: async () => false,
+  verifyPhoneNumber: async () => false,
   saveUserSettings: async () => false,
 });
 
@@ -64,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     theme?: 'light' | 'dark';
     notificationEnabled?: boolean;
     email?: string;
+    phoneVerified?: boolean;
   }>({});
 
   useEffect(() => {
@@ -72,6 +82,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(authUser);
       
       if (authUser) {
+        // Check if user is new and send welcome email
+        if (authUser.metadata.creationTime === authUser.metadata.lastSignInTime) {
+          // User just created their account
+          await sendWelcomeEmail(authUser.email || '', authUser.displayName || 'User');
+        }
+        
         // Load user data from Firestore
         const userFavorites = await getUserFavorites(authUser.uid);
         setFavorites(userFavorites);
@@ -170,11 +186,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendVerificationCode = async (phoneNumber: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const success = await sendPhoneVerificationCode(user.uid, phoneNumber);
+      return success;
+    } catch (error) {
+      console.error("Error sending verification code:", error);
+      return false;
+    }
+  };
+
+  const verifyPhoneNumber = async (phoneNumber: string, code: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const success = await verifyUserPhoneNumber(user.uid, phoneNumber, code);
+      
+      if (success) {
+        // Update settings to mark phone as verified
+        const updatedSettings = { ...settings, phoneVerified: true };
+        await updateUserSettings(user.uid, updatedSettings);
+        setSettings(updatedSettings);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error verifying phone number:", error);
+      return false;
+    }
+  };
+
   const saveUserSettings = async (newSettings: {
     unitSystem?: 'metric' | 'imperial';
     theme?: 'light' | 'dark';
     notificationEnabled?: boolean;
     email?: string;
+    phoneVerified?: boolean;
   }): Promise<boolean> => {
     if (!user) return false;
     
@@ -205,6 +254,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signInWithGoogle: googleSignIn,
       addToFavorites,
       removeFromFavorites,
+      sendVerificationCode,
+      verifyPhoneNumber,
       saveUserSettings,
     }}>
       {children}
