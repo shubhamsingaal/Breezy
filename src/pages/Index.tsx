@@ -27,7 +27,6 @@ const Index = () => {
   const { toast: toastNotification } = useToast();
   const { theme } = useTheme();
   
-  // Use React Query for better caching and auto-refetching
   const { 
     data: weatherData, 
     isLoading, 
@@ -40,20 +39,22 @@ const Index = () => {
     refetchOnWindowFocus: false,
     refetchInterval: 1000 * 60 * 15, // Auto refresh every 15 minutes
     retry: 1,
-    onError: (error: any) => {
-      console.error("Error fetching weather data:", error);
-      setError(error.message || "Could not fetch weather data. Please try again.");
-      
-      toastNotification({
-        title: "Error",
-        description: error.message || "Could not fetch weather data. Please try again.",
-        variant: "destructive"
-      });
-    },
     onSuccess: (data) => {
       setError(null);
       setLastUpdated(new Date());
       toast.success("Weather data updated successfully");
+    },
+    onSettled: (data, error) => {
+      if (error) {
+        console.error("Error fetching weather data:", error);
+        setError((error as Error).message || "Could not fetch weather data. Please try again.");
+        
+        toastNotification({
+          title: "Error",
+          description: (error as Error).message || "Could not fetch weather data. Please try again.",
+          variant: "destructive"
+        });
+      }
     },
   });
 

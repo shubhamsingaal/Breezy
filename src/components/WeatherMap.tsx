@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTheme } from '@/hooks/use-theme';
 import { Loader2, Map, Layers, CloudRain, Wind, Thermometer } from 'lucide-react';
-// Import Leaflet properly with dynamic import to prevent SSR issues
-import 'leaflet/dist/leaflet.css';
+// No static import of Leaflet CSS - we'll load it dynamically
 
 interface WeatherMapProps {
   lat: number;
@@ -28,6 +27,9 @@ const WeatherMap = ({ lat, lon, location }: WeatherMapProps) => {
       try {
         // Dynamically import Leaflet to avoid SSR issues
         const leaflet = await import('leaflet');
+        // Dynamically import CSS - this is the key fix
+        await import('leaflet/dist/leaflet.css');
+        
         L = leaflet.default;
         
         if (!mapRef.current) {
