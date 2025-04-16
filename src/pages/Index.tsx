@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { getWeatherData } from '../services/weatherService';
 import { WeatherData } from '../types/weather';
@@ -18,12 +19,19 @@ import Footer from '../components/Footer';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
+import WeatherHighlights from '../components/WeatherHighlights';
+import WeatherAlerts from '../components/WeatherAlerts';
+import FavLocations from '../components/FavLocations';
 
 const Index = () => {
   const [location, setLocation] = useState<string>("San Francisco");
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    const saved = localStorage.getItem("favoriteLocations");
+    return saved ? JSON.parse(saved) : ["San Francisco", "New York", "London"];
+  });
   const { toast: toastNotification } = useToast();
   const { theme } = useTheme();
   
@@ -39,12 +47,12 @@ const Index = () => {
     refetchOnWindowFocus: false,
     refetchInterval: 1000 * 60 * 15, // Auto refresh every 15 minutes
     retry: 1,
-    onSuccess: (data) => {
-      setError(null);
-      setLastUpdated(new Date());
-      toast.success("Weather data updated successfully");
-    },
     onSettled: (data, error) => {
+      if (data) {
+        setError(null);
+        setLastUpdated(new Date());
+        toast.success("Weather data updated successfully");
+      }
       if (error) {
         console.error("Error fetching weather data:", error);
         setError((error as Error).message || "Could not fetch weather data. Please try again.");
@@ -103,6 +111,22 @@ const Index = () => {
     setUnitSystem(prev => prev === 'metric' ? 'imperial' : 'metric');
   }, []);
 
+  const addToFavorites = useCallback((locationName: string) => {
+    if (!favorites.includes(locationName)) {
+      const newFavorites = [...favorites, locationName];
+      setFavorites(newFavorites);
+      localStorage.setItem("favoriteLocations", JSON.stringify(newFavorites));
+      toast.success(`Added ${locationName} to favorites`);
+    }
+  }, [favorites]);
+
+  const removeFromFavorites = useCallback((locationName: string) => {
+    const newFavorites = favorites.filter(fav => fav !== locationName);
+    setFavorites(newFavorites);
+    localStorage.setItem("favoriteLocations", JSON.stringify(newFavorites));
+    toast.success(`Removed ${locationName} from favorites`);
+  }, [favorites]);
+
   if (isLoading && !weatherData) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-light'} transition-colors duration-500`}>
@@ -159,6 +183,17 @@ const Index = () => {
             {error}
           </div>
         )}
+
+        {/* Favorites section */}
+        <div className="mb-6">
+          <FavLocations 
+            favorites={favorites} 
+            currentLocation={weatherData?.location.name || ""} 
+            onSelect={handleSearch}
+            onAdd={() => weatherData && addToFavorites(weatherData.location.name)}
+            onRemove={removeFromFavorites}
+          />
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main weather card */}
@@ -182,6 +217,24 @@ const Index = () => {
                   unitSystem={unitSystem} 
                 />
               </div>
+            )}
+          </div>
+          
+          {/* Weather alerts if any */}
+          {weatherData?.alerts?.alert.length > 0 && (
+            <div className="lg:col-span-12">
+              <WeatherAlerts alerts={weatherData.alerts} />
+            </div>
+          )}
+          
+          {/* Weather highlights */}
+          <div className="lg:col-span-12">
+            {weatherData && (
+              <WeatherHighlights 
+                current={weatherData.current}
+                forecast={weatherData.forecast}
+                unitSystem={unitSystem}
+              />
             )}
           </div>
           
