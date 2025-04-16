@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTheme } from '@/hooks/use-theme';
 import { CurrentWeather, Forecast } from '../types/weather';
-import { BarChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart, ComposedChart } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, Droplets, Thermometer } from 'lucide-react';
 
@@ -40,10 +40,11 @@ const WeatherHighlights = ({ current, forecast, unitSystem }: WeatherHighlightsP
   // Calculate temperature gradient for charts
   const tempColor = theme === 'dark' ? '#3b82f6' : '#0284c7';
   const precipColor = theme === 'dark' ? '#22d3ee' : '#06b6d4';
+  const precipAreaColor = theme === 'dark' ? 'rgba(34, 211, 238, 0.3)' : 'rgba(6, 182, 212, 0.3)';
   const humidityColor = theme === 'dark' ? '#a855f7' : '#9333ea';
   
   return (
-    <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white'} shadow-md transition-all duration-300 hover:shadow-lg animate-pop`}>
+    <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white'} shadow-md transition-all duration-500 hover:shadow-lg animate-pop`}>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center">
           <TrendingUp className={`mr-2 h-5 w-5 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} />
@@ -67,7 +68,7 @@ const WeatherHighlights = ({ current, forecast, unitSystem }: WeatherHighlightsP
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="temperature" className="pt-4">
+          <TabsContent value="temperature" className="pt-4 animate-fade-in">
             <div className="h-80 md:h-96">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -96,6 +97,7 @@ const WeatherHighlights = ({ current, forecast, unitSystem }: WeatherHighlightsP
                       borderColor: theme === 'dark' ? '#374151' : '#e2e8f0',
                       color: theme === 'dark' ? '#f9fafb' : '#111827'
                     }} 
+                    animationDuration={300}
                   />
                   <Legend />
                   <Line 
@@ -106,6 +108,8 @@ const WeatherHighlights = ({ current, forecast, unitSystem }: WeatherHighlightsP
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 5 }}
+                    animationDuration={1000}
+                    animationEasing="ease-in-out"
                   />
                   <Line 
                     type="monotone" 
@@ -115,16 +119,18 @@ const WeatherHighlights = ({ current, forecast, unitSystem }: WeatherHighlightsP
                     strokeWidth={2}
                     strokeDasharray="5 5"
                     dot={false}
+                    animationDuration={1000}
+                    animationEasing="ease-out"
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </TabsContent>
           
-          <TabsContent value="precipitation" className="pt-4">
+          <TabsContent value="precipitation" className="pt-4 animate-fade-in">
             <div className="h-80 md:h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
+                <ComposedChart
                   data={hourlyData}
                   margin={{ top: 5, right: 30, left: 10, bottom: 30 }}
                 >
@@ -150,20 +156,34 @@ const WeatherHighlights = ({ current, forecast, unitSystem }: WeatherHighlightsP
                       borderColor: theme === 'dark' ? '#374151' : '#e2e8f0',
                       color: theme === 'dark' ? '#f9fafb' : '#111827'
                     }} 
+                    animationDuration={300}
                   />
                   <Legend />
+                  <Area 
+                    type="monotone"
+                    dataKey="precip" 
+                    name={`Precipitation (${unitSystem === 'metric' ? 'mm' : 'in'})`}
+                    fill={precipAreaColor} 
+                    stroke={precipColor}
+                    strokeWidth={2}
+                    animationDuration={1000}
+                    animationEasing="ease-in-out"
+                  />
                   <Bar 
                     dataKey="precip" 
                     name={`Precipitation (${unitSystem === 'metric' ? 'mm' : 'in'})`}
                     fill={precipColor} 
                     radius={[4, 4, 0, 0]}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                    barSize={6}
                   />
-                </BarChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </TabsContent>
           
-          <TabsContent value="humidity" className="pt-4">
+          <TabsContent value="humidity" className="pt-4 animate-fade-in">
             <div className="h-80 md:h-96">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -193,6 +213,7 @@ const WeatherHighlights = ({ current, forecast, unitSystem }: WeatherHighlightsP
                       borderColor: theme === 'dark' ? '#374151' : '#e2e8f0',
                       color: theme === 'dark' ? '#f9fafb' : '#111827'
                     }} 
+                    animationDuration={300}
                   />
                   <Legend />
                   <Line 
@@ -203,6 +224,8 @@ const WeatherHighlights = ({ current, forecast, unitSystem }: WeatherHighlightsP
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 5 }}
+                    animationDuration={1000}
+                    animationEasing="ease-in-out"
                   />
                 </LineChart>
               </ResponsiveContainer>

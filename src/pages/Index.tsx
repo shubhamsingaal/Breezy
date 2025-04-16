@@ -16,22 +16,25 @@ import AirQuality from '../components/AirQuality';
 import SunriseSunset from '../components/SunriseSunset';
 import UVIndex from '../components/UVIndex';
 import Footer from '../components/Footer';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import WeatherHighlights from '../components/WeatherHighlights';
 import WeatherAlerts from '../components/WeatherAlerts';
 import FavLocations from '../components/FavLocations';
+import VisibilityInfo from '../components/VisibilityInfo';
+import MoonPhase from '../components/MoonPhase';
 
 const Index = () => {
   const [location, setLocation] = useState<string>("San Francisco");
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
   const [favorites, setFavorites] = useState<string[]>(() => {
     const saved = localStorage.getItem("favoriteLocations");
     return saved ? JSON.parse(saved) : ["San Francisco", "New York", "London"];
   });
+  const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
+  const [pageLoading, setPageLoading] = useState<boolean>(true);
   const { toast: toastNotification } = useToast();
   const { theme } = useTheme();
   
@@ -61,20 +64,31 @@ const Index = () => {
     }
   });
 
-  // Update lastUpdated and show toast on successful data fetch
+  // Update toast on successful data fetch
   useEffect(() => {
-    if (weatherData) {
+    if (weatherData && !isDataLoaded) {
       setError(null);
-      setLastUpdated(new Date());
+      setIsDataLoaded(true);
       toast.success("Weather data updated successfully");
     }
-  }, [weatherData]);
+  }, [weatherData, isDataLoaded]);
+
+  // Page loading animation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSearch = useCallback((searchLocation: string) => {
     setLocation(searchLocation);
+    setIsDataLoaded(false);
   }, []);
 
   const handleRefresh = useCallback(() => {
+    setIsDataLoaded(false);
     refetch();
   }, [refetch]);
   
@@ -95,6 +109,7 @@ const Index = () => {
         const { latitude, longitude } = position.coords;
         const locationString = `${latitude},${longitude}`;
         setLocation(locationString);
+        setIsDataLoaded(false);
         toast.dismiss();
         toast.success("Location detected successfully");
       },
@@ -131,18 +146,20 @@ const Index = () => {
     toast.success(`Removed ${locationName} from favorites`);
   }, [favorites]);
 
-  if (isLoading && !weatherData) {
+  if (pageLoading || (isLoading && !weatherData)) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-light'} transition-colors duration-500`}>
-        <Loader2 className={`h-12 w-12 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-primary'}`} />
-        <p className={`mt-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Loading weather data...</p>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-light'} transition-colors duration-700`}>
+        <div className="animate-bounce-gentle">
+          <Loader2 className={`h-16 w-16 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-primary'}`} />
+        </div>
+        <p className={`mt-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} animate-fade-in`}>Loading weather data...</p>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-to-b from-sky-50 to-white'} px-4 py-8 sm:px-6 sm:py-10`}>
-      <div className="max-w-7xl mx-auto">
+    <div className={`min-h-screen transition-all duration-700 ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-to-b from-sky-50 to-white'} px-4 py-8 sm:px-6 sm:py-10`}>
+      <div className="max-w-7xl mx-auto animate-fade-in transition-all">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div className="flex items-center justify-between w-full md:w-auto">
             {weatherData && <LocationDisplay location={weatherData.location} />}
@@ -189,7 +206,7 @@ const Index = () => {
         )}
 
         {/* Favorites section */}
-        <div className="mb-6">
+        <div className="mb-6 transition-all duration-500">
           <FavLocations 
             favorites={favorites} 
             currentLocation={weatherData?.location.name || ""} 
@@ -273,6 +290,24 @@ const Index = () => {
             <AirQuality />
           </div>
           
+          {/* New Components */}
+          <div className="lg:col-span-6">
+            {weatherData && (
+              <VisibilityInfo 
+                visibility={unitSystem === 'metric' ? weatherData.current.vis_km : weatherData.current.vis_miles}
+                unit={unitSystem === 'metric' ? 'km' : 'miles'}
+              />
+            )}
+          </div>
+          
+          <div className="lg:col-span-6">
+            {weatherData && weatherData.forecast.forecastday[0] && (
+              <MoonPhase 
+                astroData={weatherData.forecast.forecastday[0].astro}
+              />
+            )}
+          </div>
+          
           {/* Forecast */}
           <div className="lg:col-span-12">
             {weatherData && (
@@ -285,12 +320,6 @@ const Index = () => {
             )}
           </div>
         </div>
-        
-        {lastUpdated && (
-          <div className={`text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-sm mt-8 animate-fade-in`} style={{ animationDelay: "300ms" }}>
-            <p>Last updated: {lastUpdated.toLocaleTimeString()}</p>
-          </div>
-        )}
         
         {/* Footer with attribution */}
         <Footer />

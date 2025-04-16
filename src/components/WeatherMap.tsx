@@ -97,7 +97,7 @@ const WeatherMap = ({ lat, lon, location }: WeatherMapProps) => {
   };
 
   return (
-    <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white'} shadow-md transition-all duration-300 hover:shadow-lg animate-slide-up ${showFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : ''}`}>
+    <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white'} shadow-md transition-all duration-500 hover:shadow-lg animate-slide-up ${showFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : ''}`}>
       <CardHeader className="pb-2 flex flex-row justify-between items-center">
         <CardTitle className="text-lg flex items-center">
           <Layers className={`mr-2 h-5 w-5 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} />
