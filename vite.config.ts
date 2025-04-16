@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     rollupOptions: {
-      external: ['leaflet', 'leaflet/dist/leaflet.css'],
+      external: [],
     },
   },
 }));
