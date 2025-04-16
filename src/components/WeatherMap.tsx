@@ -1,11 +1,10 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTheme } from '@/hooks/use-theme';
 import { Loader2, Map, Layers, CloudRain, Wind, Thermometer } from 'lucide-react';
-// Dynamically import Leaflet to prevent SSR issues
-import { Button } from '@/components/ui/button';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface WeatherMapProps {
   lat: number;
@@ -18,99 +17,83 @@ const WeatherMap = ({ lat, lon, location }: WeatherMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [isMapLoading, setIsMapLoading] = useState(true);
   const [mapType, setMapType] = useState<'temp' | 'rain' | 'wind'>('temp');
-  const [mapInstance, setMapInstance] = useState<any>(null);
-  const [showFullscreen, setShowFullscreen] = useState(false);
 
   useEffect(() => {
-    let map: any;
-    let L: any;
+    console.log('WeatherMap Props:', { lat, lon, location });
 
-    async function initMap() {
-      try {
-        // Dynamically import Leaflet to avoid SSR issues
-        const leaflet = await import('leaflet');
-        L = leaflet.default;
-
-        // Import Leaflet CSS dynamically
-        // This is needed because direct CSS imports can cause issues with build systems like Vite
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-        
-        if (!mapRef.current) {
-          console.error('Map container is not available.');
-          return;
-        }
-
-        console.log('Initializing Leaflet map...', { lat, lon });
-
-        // Check if a map already exists and remove it
-        if (mapInstance) {
-          mapInstance.remove();
-        }
-
-        map = L.map(mapRef.current).setView([lat, lon], 10);
-        setMapInstance(map);
-
-        console.log('Adding base tile layer...');
-        const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        console.log('Adding weather layer:', mapType);
-        const weatherLayers = {
-          temp: L.tileLayer(`https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`),
-          rain: L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`),
-          wind: L.tileLayer(`https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`)
-        };
-
-        const selectedLayer = weatherLayers[mapType];
-        if (selectedLayer) {
-          selectedLayer.addTo(map);
-        }
-
-        setIsMapLoading(false);
-
-        // Add marker at the location
-        L.marker([lat, lon]).addTo(map)
-          .bindPopup(`<b>${location}</b><br>Lat: ${lat}, Lon: ${lon}`)
-          .openPopup();
-
-      } catch (error) {
-        console.error('Failed to initialize map:', error);
-        setIsMapLoading(false);
-      }
+    if (!mapRef.current) {
+      console.error('Map container is not available.');
+      return;
     }
 
-    initMap();
+    console.log('Initializing Leaflet map...');
+    const map = L.map(mapRef.current).setView([lat, lon], 10);
+
+    console.log('Adding base tile layer...');
+    const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    console.log('Adding weather layer:', mapType);
+    const weatherLayers = {
+      temp: L.tileLayer(`https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`),
+      rain: L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`),
+      wind: L.tileLayer(`https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=d2b94886e6fe4a2de469dd8df40d5ed7`)
+    };
+
+    const selectedLayer = weatherLayers[mapType];
+    if (selectedLayer) {
+      console.log('Adding selected weather layer to map:', mapType);
+      console.log('Tile Layer URL:', weatherLayers[mapType]._url);
+      selectedLayer.addTo(map);
+    } else {
+      console.error('Invalid map type selected:', mapType);
+    }
+
+    setIsMapLoading(false);
 
     return () => {
-      if (mapInstance) {
-        mapInstance.remove();
-      }
+      console.log('Cleaning up map instance...');
+      map.remove();
     };
-  }, [lat, lon, mapType, mapInstance]);
+  }, [lat, lon, mapType]);
 
-  const handleFullscreen = () => {
-    setShowFullscreen(!showFullscreen);
+  // This would be replaced with actual map rendering
+  const renderMap = () => {
+    if (isMapLoading) {
+      return (
+        <div className="flex items-center justify-center h-64 bg-gray-100 dark:bg-slate-800 rounded-lg">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative h-64 overflow-hidden rounded-lg">
+        <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-slate-800' : 'bg-blue-50'} flex items-center justify-center`}>
+          <div className="text-center p-4">
+            <Map className={`h-12 w-12 mb-2 mx-auto ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} />
+            <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+              Map for {location} ({lat.toFixed(2)}°, {lon.toFixed(2)}°)
+            </p>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              {mapType === 'temp' && 'Temperature layer'}
+              {mapType === 'rain' && 'Precipitation layer'}
+              {mapType === 'wind' && 'Wind layer'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white'} shadow-md transition-all duration-500 hover:shadow-lg animate-slide-up ${showFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : ''}`}>
-      <CardHeader className="pb-2 flex flex-row justify-between items-center">
+    <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white'} shadow-md transition-all duration-300 hover:shadow-lg animate-slide-up`}>
+      <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center">
           <Layers className={`mr-2 h-5 w-5 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} />
           Weather Map
         </CardTitle>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handleFullscreen} 
-          className="text-xs"
-        >
-          {showFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-        </Button>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="temp" className="mb-4">
@@ -125,32 +108,14 @@ const WeatherMap = ({ lat, lon, location }: WeatherMapProps) => {
               <Wind className="h-4 w-4 mr-1" /> Wind
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="temp" className={showFullscreen ? "h-[calc(100vh-12rem)]" : "h-64"}>
-            {isMapLoading ? (
-              <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-slate-800 rounded-lg">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div ref={mapRef} className="h-full w-full rounded-lg overflow-hidden" />
-            )}
+          <TabsContent value="temp">
+            <div ref={mapRef} className="h-64 w-full rounded-lg overflow-hidden" />
           </TabsContent>
-          <TabsContent value="rain" className={showFullscreen ? "h-[calc(100vh-12rem)]" : "h-64"}>
-            {isMapLoading ? (
-              <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-slate-800 rounded-lg">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div ref={mapRef} className="h-full w-full rounded-lg overflow-hidden" />
-            )}
+          <TabsContent value="rain">
+            <div ref={mapRef} className="h-64 w-full rounded-lg overflow-hidden" />
           </TabsContent>
-          <TabsContent value="wind" className={showFullscreen ? "h-[calc(100vh-12rem)]" : "h-64"}>
-            {isMapLoading ? (
-              <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-slate-800 rounded-lg">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div ref={mapRef} className="h-full w-full rounded-lg overflow-hidden" />
-            )}
+          <TabsContent value="wind">
+            <div ref={mapRef} className="h-64 w-full rounded-lg overflow-hidden" />
           </TabsContent>
         </Tabs>
       </CardContent>
