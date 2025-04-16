@@ -40,23 +40,21 @@ const Index = () => {
     refetchOnWindowFocus: false,
     refetchInterval: 1000 * 60 * 15, // Auto refresh every 15 minutes
     retry: 1,
-    meta: {
-      onError: (error: any) => {
-        console.error("Error fetching weather data:", error);
-        setError(error.message || "Could not fetch weather data. Please try again.");
-        
-        toastNotification({
-          title: "Error",
-          description: error.message || "Could not fetch weather data. Please try again.",
-          variant: "destructive"
-        });
-      },
-      onSuccess: (data) => {
-        setError(null);
-        setLastUpdated(new Date());
-        toast.success("Weather data updated successfully");
-      },
-    }
+    onError: (error: any) => {
+      console.error("Error fetching weather data:", error);
+      setError(error.message || "Could not fetch weather data. Please try again.");
+      
+      toastNotification({
+        title: "Error",
+        description: error.message || "Could not fetch weather data. Please try again.",
+        variant: "destructive"
+      });
+    },
+    onSuccess: (data) => {
+      setError(null);
+      setLastUpdated(new Date());
+      toast.success("Weather data updated successfully");
+    },
   });
 
   const handleSearch = useCallback((searchLocation: string) => {
