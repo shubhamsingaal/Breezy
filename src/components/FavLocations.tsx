@@ -1,10 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/hooks/use-auth-context';
+import { toast } from "sonner";
 
 interface FavLocationsProps {
   favorites: string[];
@@ -17,8 +18,41 @@ interface FavLocationsProps {
 const FavLocations = ({ favorites, currentLocation, onSelect, onAdd, onRemove }: FavLocationsProps) => {
   const { theme } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
+  const { user, favorites: userFavorites, addToFavorites, removeFromFavorites } = useAuth();
+  const [displayedFavorites, setDisplayedFavorites] = useState<string[]>(favorites);
 
-  const isFavorite = favorites.includes(currentLocation);
+  useEffect(() => {
+    // If user is logged in, use their saved favorites
+    if (user && userFavorites.length > 0) {
+      setDisplayedFavorites(userFavorites);
+    } else {
+      setDisplayedFavorites(favorites);
+    }
+  }, [user, userFavorites, favorites]);
+
+  const isFavorite = displayedFavorites.includes(currentLocation);
+
+  const handleAddToFavorites = async () => {
+    if (user) {
+      const success = await addToFavorites(currentLocation);
+      if (success) {
+        toast.success(`Added ${currentLocation} to favorites`);
+      }
+    } else {
+      onAdd();
+    }
+  };
+
+  const handleRemoveFromFavorites = async (location: string) => {
+    if (user) {
+      const success = await removeFromFavorites(location);
+      if (success) {
+        toast.success(`Removed ${location} from favorites`);
+      }
+    } else {
+      onRemove(location);
+    }
+  };
 
   return (
     <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white'} shadow-md transition-all duration-300 hover:shadow-lg`}>
@@ -32,7 +66,7 @@ const FavLocations = ({ favorites, currentLocation, onSelect, onAdd, onRemove }:
             <Button 
               variant={isFavorite ? "outline" : "default"} 
               size="sm"
-              onClick={onAdd}
+              onClick={handleAddToFavorites}
               disabled={isFavorite}
               className="text-xs flex items-center"
             >
@@ -59,12 +93,12 @@ const FavLocations = ({ favorites, currentLocation, onSelect, onAdd, onRemove }:
       </CardHeader>
       <CardContent>
         <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 ${isExpanded ? '' : 'max-h-14 overflow-hidden'}`}>
-          {favorites.length === 0 ? (
+          {displayedFavorites.length === 0 ? (
             <div className="col-span-full text-center py-4 text-gray-500 dark:text-gray-400">
               No favorite locations saved yet. Add locations to see them here.
             </div>
           ) : (
-            favorites.map((fav) => (
+            displayedFavorites.map((fav) => (
               <Button 
                 key={fav} 
                 variant={fav === currentLocation ? "default" : "outline"}
@@ -82,7 +116,7 @@ const FavLocations = ({ favorites, currentLocation, onSelect, onAdd, onRemove }:
                     className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-red-500 hover:fill-red-500"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onRemove(fav);
+                      handleRemoveFromFavorites(fav);
                     }}
                   />
                 )}

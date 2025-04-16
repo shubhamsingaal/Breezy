@@ -1,10 +1,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getWeatherData } from '../services/weatherService';
-import { WeatherData } from '../types/weather';
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/hooks/use-auth-context";
 import SearchBar from '../components/SearchBar';
 import LocationDisplay from '../components/LocationDisplay';
 import WeatherCard from '../components/WeatherCard';
@@ -16,7 +16,7 @@ import AirQuality from '../components/AirQuality';
 import SunriseSunset from '../components/SunriseSunset';
 import UVIndex from '../components/UVIndex';
 import Footer from '../components/Footer';
-import { Loader2, RefreshCw, ArrowUpDown } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import WeatherHighlights from '../components/WeatherHighlights';
@@ -24,6 +24,7 @@ import WeatherAlerts from '../components/WeatherAlerts';
 import FavLocations from '../components/FavLocations';
 import VisibilityInfo from '../components/VisibilityInfo';
 import MoonPhase from '../components/MoonPhase';
+import Header from '../components/Header';
 
 const Index = () => {
   const [location, setLocation] = useState<string>("San Francisco");
@@ -37,6 +38,16 @@ const Index = () => {
   const [pageLoading, setPageLoading] = useState<boolean>(true);
   const { toast: toastNotification } = useToast();
   const { theme } = useTheme();
+  const { user, settings, saveUserSettings } = useAuth();
+  
+  // Apply user settings if available
+  useEffect(() => {
+    if (user && settings) {
+      if (settings.unitSystem) {
+        setUnitSystem(settings.unitSystem);
+      }
+    }
+  }, [user, settings]);
   
   const { 
     data: weatherData, 
@@ -70,8 +81,18 @@ const Index = () => {
       setError(null);
       setIsDataLoaded(true);
       toast.success("Weather data updated successfully");
+      
+      // Check for weather alerts and show notification if enabled
+      if (user && settings.notificationEnabled && weatherData.alerts?.alert?.length > 0) {
+        const mostSevereAlert = weatherData.alerts.alert[0];
+        toastNotification({
+          title: "Weather Alert",
+          description: mostSevereAlert.headline || "Weather alert in your area",
+          variant: "destructive"
+        });
+      }
     }
-  }, [weatherData, isDataLoaded]);
+  }, [weatherData, isDataLoaded, user, settings, toastNotification]);
 
   // Page loading animation
   useEffect(() => {
@@ -127,8 +148,14 @@ const Index = () => {
   }, [toastNotification]);
 
   const toggleUnitSystem = useCallback(() => {
-    setUnitSystem(prev => prev === 'metric' ? 'imperial' : 'metric');
-  }, []);
+    const newUnitSystem = unitSystem === 'metric' ? 'imperial' : 'metric';
+    setUnitSystem(newUnitSystem);
+    
+    // Save preference if user is logged in
+    if (user) {
+      saveUserSettings({ unitSystem: newUnitSystem });
+    }
+  }, [unitSystem, user, saveUserSettings]);
 
   const addToFavorites = useCallback((locationName: string) => {
     if (!favorites.includes(locationName)) {
@@ -158,8 +185,11 @@ const Index = () => {
   }
 
   return (
-    <div className={`min-h-screen transition-all duration-700 ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-to-b from-sky-50 to-white'} px-4 py-8 sm:px-6 sm:py-10`}>
-      <div className="max-w-7xl mx-auto animate-fade-in transition-all">
+    <div className={`min-h-screen transition-all duration-700 ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-to-b from-sky-50 to-white'} px-4 pb-8 pt-16 sm:px-6 sm:pb-10`}>
+      {/* Header */}
+      <Header />
+      
+      <div className="max-w-7xl mx-auto animate-fade-in transition-all mt-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div className="flex items-center justify-between w-full md:w-auto">
             {weatherData && <LocationDisplay location={weatherData.location} />}
@@ -290,7 +320,7 @@ const Index = () => {
             <AirQuality />
           </div>
           
-          {/* New Components */}
+          {/* Additional components */}
           <div className="lg:col-span-6">
             {weatherData && (
               <VisibilityInfo 
