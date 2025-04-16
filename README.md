@@ -1,7 +1,7 @@
-# Breezy Locale View
+# Breezy Weather App
 
 ## Overview
-Breezy Locale View is a modern weather application built with React, TypeScript, and Vite. It provides users with real-time weather data, forecasts, and interactive weather maps. The app is designed to be responsive and user-friendly, offering a seamless experience across devices.
+Breezy Weather App is a modern weather application built with React, TypeScript, and Vite. It provides users with real-time weather data, forecasts, and interactive weather maps. The app is designed to be responsive and user-friendly, offering a seamless experience across devices.
 
 ### Key Features
 - **Current Weather**: Displays real-time weather conditions, including temperature, humidity, wind speed, and more.
@@ -34,7 +34,7 @@ Breezy Locale View is a modern weather application built with React, TypeScript,
    ```
 2. Navigate to the project directory:
    ```bash
-   cd breezy-locale-view
+   cd breezy-weather-app
    ```
 3. Install dependencies:
    ```bash
@@ -47,7 +47,7 @@ Breezy Locale View is a modern weather application built with React, TypeScript,
 5. Open the app in your browser at `http://localhost:8080`.
 
 ### Deployment
-The app is deployed on Vercel for production. Visit the live app at: [Breezy Locale View](https://breezy-locale-view.vercel.app)
+The app is deployed on Vercel for production. Visit the live app at: [Breezy Weather App](https://breezy-weather-app.vercel.app)
 
 ### Contributing
 Contributions are welcome! Feel free to open issues or submit pull requests to improve the app.
