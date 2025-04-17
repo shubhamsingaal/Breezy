@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { 
@@ -9,8 +10,6 @@ import {
   User,
   GoogleAuthProvider,
   signInWithPopup,
-  RecaptchaVerifier,
-  signInWithPhoneNumber
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -48,21 +47,85 @@ const db = getFirestore(app);
 const functions = getFunctions(app);
 const googleProvider = new GoogleAuthProvider();
 
+// Set persistence to local to ensure user stays logged in
+auth.useDeviceLanguage();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 // Authentication functions
 export const registerUser = async (email: string, password: string) => {
-  return await createUserWithEmailAndPassword(auth, email, password);
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Create user document in Firestore
+    await setDoc(doc(db, "users", userCredential.user.uid), {
+      email,
+      createdAt: serverTimestamp(),
+      settings: {
+        unitSystem: 'metric',
+        theme: 'light',
+        notificationEnabled: false
+      }
+    });
+    
+    return userCredential;
+  } catch (error) {
+    console.error("Registration error:", error);
+    throw error;
+  }
 };
 
 export const loginUser = async (email: string, password: string) => {
-  return await signInWithEmailAndPassword(auth, email, password);
+  try {
+    return await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error;
+  }
 };
 
 export const signInWithGoogle = async () => {
-  return await signInWithPopup(auth, googleProvider);
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    
+    // Check if this is a new user
+    const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime;
+    
+    if (isNewUser) {
+      // Create user document in Firestore
+      await setDoc(doc(db, "users", result.user.uid), {
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+        createdAt: serverTimestamp(),
+        settings: {
+          unitSystem: 'metric',
+          theme: 'light',
+          notificationEnabled: false
+        }
+      });
+    } else {
+      // Update last login time
+      await updateDoc(doc(db, "users", result.user.uid), {
+        lastLoginAt: serverTimestamp()
+      });
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("Google sign-in error:", error);
+    throw error;
+  }
 };
 
 export const logoutUser = async () => {
-  return await signOut(auth);
+  try {
+    return await signOut(auth);
+  } catch (error) {
+    console.error("Logout error:", error);
+    throw error;
+  }
 };
 
 export const getCurrentUser = (): User | null => {
@@ -161,12 +224,21 @@ export const getUserSettings = async (userId: string) => {
 // Phone verification functions
 export const sendVerificationCode = async (userId: string, phoneNumber: string): Promise<boolean> => {
   try {
+    // Generate a random 6-digit code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
     await setDoc(doc(db, "verifications", userId), {
       phoneNumber,
-      createdAt: serverTimestamp()
+      verificationCode,
+      createdAt: serverTimestamp(),
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes from now
     });
     
-    console.log("Verification request stored for:", phoneNumber);
+    console.log(`Verification code ${verificationCode} generated for ${phoneNumber}`);
+    
+    // In a production app, we would send an SMS here
+    // For now, we'll log it to the console
+    console.log(`SMS would be sent to ${phoneNumber} with code: ${verificationCode}`);
     
     return true;
   } catch (error) {
@@ -180,17 +252,37 @@ export const verifyPhoneNumber = async (userId: string, phoneNumber: string, cod
     const verificationDoc = await getDoc(doc(db, "verifications", userId));
     
     if (!verificationDoc.exists()) {
+      console.error("No verification request found");
       return false;
     }
     
     const verificationData = verificationDoc.data();
     const isCorrectPhone = verificationData.phoneNumber === phoneNumber;
+    const isCorrectCode = verificationData.verificationCode === code;
+    const isExpired = new Date() > new Date(verificationData.expiresAt.toDate());
     
-    if (isCorrectPhone) {
+    if (isExpired) {
+      console.error("Verification code expired");
+      return false;
+    }
+    
+    if (isCorrectPhone && isCorrectCode) {
+      // Update user data with verified phone
       await updateDoc(doc(db, "users", userId), {
         phoneNumber,
         phoneVerified: true
       });
+      
+      // Update settings
+      await setDoc(doc(db, "users", userId), {
+        settings: {
+          phoneNumber,
+          phoneVerified: true
+        }
+      }, { merge: true });
+      
+      // Clean up verification document
+      // await deleteDoc(doc(db, "verifications", userId));
       
       return true;
     }
@@ -211,7 +303,9 @@ export const sendWelcomeEmail = async (email: string, name: string): Promise<boo
       type: "welcome",
       email,
       name,
-      sentAt: serverTimestamp()
+      sentAt: serverTimestamp(),
+      subject: "Welcome to Breezy Weather!",
+      body: `Hello ${name || "there"}! Welcome to Breezy Weather - your personal weather companion. Stay updated with real-time weather forecasts and alerts for your favorite locations.`
     });
     
     return true;

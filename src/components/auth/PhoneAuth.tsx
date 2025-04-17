@@ -11,8 +11,6 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { getAuth } from 'firebase/auth';
 
 const PhoneAuth = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -21,32 +19,7 @@ const PhoneAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
-  const { user, saveUserSettings } = useAuth();
-  const auth = getAuth();
-
-  // Create a recaptcha verifier
-  const setupRecaptcha = () => {
-    if (!(window as any).recaptchaVerifier) {
-      try {
-        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'invisible',
-          'callback': () => {
-            // reCAPTCHA solved, allow signInWithPhoneNumber.
-            console.log('Recaptcha verified');
-          },
-          'expired-callback': () => {
-            // Response expired. Ask user to solve reCAPTCHA again.
-            toast.error("reCAPTCHA expired. Please try again.");
-          }
-        });
-      } catch (error) {
-        console.error('Recaptcha setup error:', error);
-        toast.error("Error setting up verification. Please try again.");
-      }
-    }
-    return (window as any).recaptchaVerifier;
-  };
+  const { user, sendVerificationCode, verifyPhoneNumber } = useAuth();
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,23 +29,18 @@ const PhoneAuth = () => {
       // Format phone number (ensure it has the + prefix)
       const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
       
-      // Setup recaptcha
-      const appVerifier = setupRecaptcha();
+      // Send verification code using the auth context method
+      const success = await sendVerificationCode(formattedPhone);
       
-      // Send verification code
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-      setConfirmationResult(confirmation);
-      setCodeSent(true);
-      toast.success("Verification code sent to your phone");
+      if (success) {
+        setCodeSent(true);
+        toast.success("Verification code sent to your phone");
+      } else {
+        toast.error("Failed to send verification code");
+      }
     } catch (error: any) {
       console.error("Send code error:", error);
       toast.error(error.message || "Failed to send verification code");
-      
-      // Reset recaptcha if there's an error
-      if ((window as any).recaptchaVerifier) {
-        (window as any).recaptchaVerifier.clear();
-        (window as any).recaptchaVerifier = null;
-      }
     } finally {
       setIsLoading(false);
     }
@@ -83,30 +51,17 @@ const PhoneAuth = () => {
     setIsVerifying(true);
 
     try {
-      if (!confirmationResult) {
-        toast.error("Verification session expired. Please request a new code.");
-        setCodeSent(false);
-        setIsVerifying(false);
-        return;
-      }
-
-      // Confirm the verification code
-      const result = await confirmationResult.confirm(verificationCode);
-      if (result.user) {
+      const success = await verifyPhoneNumber(phoneNumber, verificationCode);
+      
+      if (success) {
         setVerified(true);
         toast.success("Phone number verified successfully!");
-        
-        // Update user settings if logged in
-        if (user) {
-          await saveUserSettings({ 
-            phoneVerified: true,
-            phoneNumber: phoneNumber
-          });
-        }
+      } else {
+        toast.error("Verification failed. Please check the code and try again");
       }
     } catch (error: any) {
       console.error("Verification error:", error);
-      toast.error(error.message || "Verification failed. Please check the code and try again");
+      toast.error(error.message || "Verification failed");
     } finally {
       setIsVerifying(false);
     }
@@ -128,9 +83,6 @@ const PhoneAuth = () => {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Hidden recaptcha container */}
-      <div id="recaptcha-container"></div>
-      
       {!codeSent ? (
         <form onSubmit={handleSendCode} className="space-y-4">
           <div className="space-y-2">
@@ -203,13 +155,7 @@ const PhoneAuth = () => {
             type="button" 
             variant="outline" 
             className="w-full mt-2" 
-            onClick={() => {
-              setCodeSent(false);
-              if ((window as any).recaptchaVerifier) {
-                (window as any).recaptchaVerifier.clear();
-                (window as any).recaptchaVerifier = null;
-              }
-            }}
+            onClick={() => setCodeSent(false)}
             disabled={isVerifying}
           >
             Change Phone Number

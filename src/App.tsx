@@ -30,6 +30,16 @@ fixMapZIndexStyle.innerHTML = `
     z-index: 50 !important;
   }
   
+  /* Make sure popups are above the map but below other UI */
+  .leaflet-popup {
+    z-index: 20 !important;
+  }
+  
+  /* Ensure controls are usable */
+  .leaflet-control {
+    z-index: 30 !important;
+  }
+  
   /* Add smooth page transitions */
   .page-transition-enter {
     opacity: 0;
@@ -88,6 +98,25 @@ fixMapZIndexStyle.innerHTML = `
   /* Ensure no leaflet controls overlap with other UI elements */
   .leaflet-top, .leaflet-bottom {
     z-index: 800 !important;
+  }
+  
+  /* Add smooth transition for theme changes */
+  body {
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  }
+  
+  /* Improved loading animation */
+  @keyframes bounce-gentle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  .animate-bounce-gentle {
+    animation: bounce-gentle 2s ease-in-out infinite;
   }
 `;
 document.head.appendChild(fixMapZIndexStyle);

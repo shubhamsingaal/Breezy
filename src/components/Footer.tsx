@@ -5,13 +5,14 @@ import { useTheme } from '@/hooks/use-theme';
 
 const Footer: React.FC = () => {
   const { theme } = useTheme();
+  const currentYear = new Date().getFullYear();
   
   return (
     <footer className={`mt-12 mb-6 flex flex-col items-center justify-center text-center ${
       theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
-    } transition-colors duration-300 space-y-2`}>
+    } transition-colors duration-300 space-y-3`}>
       <div className="flex items-center gap-1">
-        <CloudLightning className="h-4 w-4 text-blue-500" />
+        <CloudLightning className="h-5 w-5 text-blue-500" />
         <span className="text-sm font-medium">Breezy</span>
       </div>
       
@@ -21,11 +22,13 @@ const Footer: React.FC = () => {
           <Heart className="h-3 w-3 text-red-500 fill-red-500" />
           <span>by</span>
         </div>
-        <span className="text-sm font-medium">shubhamsingaal</span>
+        <span className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-transparent bg-clip-text">
+          shubhamsingaal
+        </span>
       </div>
       
       <div className="text-xs mt-2">
-        Powered by WeatherAPI & OpenWeatherMap | © {new Date().getFullYear()}
+        Powered by <span className="font-medium">WeatherAPI</span> & <span className="font-medium">OpenWeatherMap</span> | © {currentYear}
       </div>
     </footer>
   );

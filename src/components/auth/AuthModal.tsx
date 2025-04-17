@@ -9,12 +9,13 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/hooks/use-auth-context';
-import { Cloud, CloudLightning, Loader2, LogIn, Mail, User, Wind, Phone } from 'lucide-react';
+import { CloudLightning, Loader2, LogIn, Mail, User, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTheme } from '@/hooks/use-theme';
 import PhoneAuth from './PhoneAuth';
+import { toast } from "sonner";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -35,8 +36,11 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     try {
       const success = await login(email, password);
       if (success) {
+        toast.success("Successfully logged in");
         onClose();
       }
+    } catch (error) {
+      console.error("Login failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -48,8 +52,11 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     try {
       const success = await register(email, password);
       if (success) {
+        toast.success("Account created successfully");
         onClose();
       }
+    } catch (error) {
+      console.error("Registration failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -60,8 +67,11 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     try {
       const success = await signInWithGoogle();
       if (success) {
+        toast.success("Successfully signed in with Google");
         onClose();
       }
+    } catch (error) {
+      console.error("Google sign-in failed:", error);
     } finally {
       setIsLoading(false);
     }
