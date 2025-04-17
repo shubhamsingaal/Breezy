@@ -1,4 +1,3 @@
-
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { 
@@ -12,7 +11,9 @@ import {
   signInWithPopup,
   connectAuthEmulator,
   signInWithPhoneNumber,
-  RecaptchaVerifier
+  RecaptchaVerifier,
+  PhoneAuthProvider,
+  PhoneInfoOptions
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -88,6 +89,9 @@ export const registerUser = async (email: string, password: string) => {
       }
     });
     
+    // Send welcome email
+    await sendWelcomeEmail(email, email.split('@')[0]);
+    
     return userCredential;
   } catch (error) {
     console.error("Registration error:", error);
@@ -124,6 +128,11 @@ export const signInWithGoogle = async () => {
           notificationEnabled: false
         }
       });
+      
+      // Send welcome email for new users
+      if (result.user.email) {
+        await sendWelcomeEmail(result.user.email, result.user.displayName || 'User');
+      }
     } else {
       // Update last login time
       await updateDoc(doc(db, "users", result.user.uid), {
@@ -245,23 +254,30 @@ export const getUserSettings = async (userId: string) => {
   }
 };
 
-// Phone verification functions - Updated to use Firebase phone auth directly
+// Phone verification functions - Completely rebuilt to work properly
 export const sendVerificationCode = async (userId: string, phoneNumber: string): Promise<boolean> => {
   try {
     // Clean up any existing recaptcha verifier
     if (phoneAuthRecaptchaVerifier) {
       phoneAuthRecaptchaVerifier.clear();
+      phoneAuthRecaptchaVerifier = null;
     }
     
-    // Create an invisible recaptcha verifier (this will be handled automatically)
+    // Make sure we have a recaptcha container
+    const recaptchaContainer = document.getElementById('phone-auth-recaptcha') || document.createElement('div');
+    if (!recaptchaContainer.id) {
+      recaptchaContainer.id = 'phone-auth-recaptcha';
+      recaptchaContainer.style.display = 'none';
+      document.body.appendChild(recaptchaContainer);
+    }
+    
+    // Create an invisible recaptcha verifier
     phoneAuthRecaptchaVerifier = new RecaptchaVerifier(auth, 'phone-auth-recaptcha', {
       size: 'invisible',
-      callback: (response: any) => {
-        // reCAPTCHA solved, allow sending verification code
+      callback: () => {
         console.log("reCAPTCHA verified");
       },
       'expired-callback': () => {
-        // Reset reCAPTCHA
         toast.error("reCAPTCHA expired. Please try again.");
         if (phoneAuthRecaptchaVerifier) {
           phoneAuthRecaptchaVerifier.clear();
@@ -270,60 +286,87 @@ export const sendVerificationCode = async (userId: string, phoneNumber: string):
       }
     });
 
-    // Force recaptcha verification
-    await phoneAuthRecaptchaVerifier.verify();
-
     // Send verification code
-    const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, phoneAuthRecaptchaVerifier);
+    const confirmationResult = await signInWithPhoneNumber(
+      auth, 
+      phoneNumber, 
+      phoneAuthRecaptchaVerifier
+    );
     
-    // Store the confirmationResult.verificationId for later use
-    phoneVerificationId = confirmationResult.verificationId;
-    
-    // Add a hidden div element for recaptcha if it doesn't exist
-    if (!document.getElementById('phone-auth-recaptcha')) {
-      const recaptchaContainer = document.createElement('div');
-      recaptchaContainer.id = 'phone-auth-recaptcha';
-      recaptchaContainer.style.display = 'none';
-      document.body.appendChild(recaptchaContainer);
-    }
+    // Store the confirmationResult globally (needs to be accessible for verification)
+    // @ts-ignore - We're adding a custom property to the window object
+    window.confirmationResult = confirmationResult;
     
     console.log(`Verification code sent to ${phoneNumber}`);
+    
+    // Store the phone number in local storage
+    localStorage.setItem('phoneAuthNumber', phoneNumber);
+    
     return true;
   } catch (error: any) {
     console.error("Error sending verification code:", error);
     toast.error(error.message || "Failed to send verification code");
+    
+    // Clean up recaptcha on error
+    if (phoneAuthRecaptchaVerifier) {
+      phoneAuthRecaptchaVerifier.clear();
+      phoneAuthRecaptchaVerifier = null;
+    }
+    
     return false;
   }
 };
 
 export const verifyPhoneNumber = async (userId: string, phoneNumber: string, code: string): Promise<boolean> => {
   try {
-    // Store the phone number verification result
-    await setDoc(doc(db, "verifications", userId), {
-      phoneNumber,
-      verificationCode: code,
-      verified: true,
-      createdAt: serverTimestamp(),
-      verifiedAt: serverTimestamp()
-    });
+    // Get the confirmationResult from the window object
+    // @ts-ignore - We're accessing a custom property from the window object
+    const confirmationResult = window.confirmationResult;
     
-    // Update user data with verified phone
-    await updateDoc(doc(db, "users", userId), {
-      phoneNumber,
-      phoneVerified: true
-    });
+    if (!confirmationResult) {
+      throw new Error("Verification session expired. Please try again.");
+    }
     
-    // Update settings
-    await setDoc(doc(db, "users", userId), {
-      settings: {
+    // Confirm the verification code
+    const result = await confirmationResult.confirm(code);
+    
+    if (result.user) {
+      // Store the phone number verification result
+      await setDoc(doc(db, "verifications", userId), {
+        phoneNumber,
+        verified: true,
+        createdAt: serverTimestamp(),
+        verifiedAt: serverTimestamp()
+      });
+      
+      // Update user data with verified phone
+      await updateDoc(doc(db, "users", userId), {
         phoneNumber,
         phoneVerified: true
-      }
-    }, { merge: true });
+      });
+      
+      // Update settings
+      await setDoc(doc(db, "users", userId), {
+        settings: {
+          phoneNumber,
+          phoneVerified: true
+        }
+      }, { merge: true });
+      
+      // Clear the confirmation result
+      // @ts-ignore
+      window.confirmationResult = null;
+      
+      // Remove phone number from local storage
+      localStorage.removeItem('phoneAuthNumber');
+      
+      return true;
+    }
     
-    return true;
-  } catch (error) {
+    return false;
+  } catch (error: any) {
     console.error("Error verifying phone:", error);
+    toast.error(error.message || "Failed to verify phone number");
     return false;
   }
 };
@@ -339,7 +382,25 @@ export const sendWelcomeEmail = async (email: string, name: string): Promise<boo
       name,
       sentAt: serverTimestamp(),
       subject: "Welcome to Breezy Weather!",
-      body: `Hello ${name || "there"}! Welcome to Breezy Weather - your personal weather companion. Stay updated with real-time weather forecasts and alerts for your favorite locations.`
+      body: `Hello ${name || "there"}!
+
+Welcome to Breezy Weather - your personal weather companion!
+
+We're excited to have you join our community of weather enthusiasts. With Breezy Weather, you'll get:
+
+• Real-time weather forecasts for any location
+• Daily and hourly forecasts with beautiful visuals
+• Weather alerts and notifications for your favorite locations
+• Detailed weather information including UV index, air quality, and more
+• Customizable settings to match your preferences
+
+Our goal is to provide you with the most accurate and user-friendly weather experience possible. Whether you're planning your day, week, or a future trip, we've got you covered with reliable weather data.
+
+Feel free to explore the app and add your favorite locations to stay updated with the latest weather conditions.
+
+Stay Breezy!
+
+The Breezy Weather Team`
     });
     
     return true;

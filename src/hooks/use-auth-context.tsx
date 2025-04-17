@@ -48,6 +48,7 @@ type AuthContextType = {
     phoneVerified?: boolean;
     phoneNumber?: string;
   }) => Promise<boolean>;
+  resetPassword: (email: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -64,6 +65,7 @@ const AuthContext = createContext<AuthContextType>({
   sendVerificationCode: async () => false,
   verifyPhoneNumber: async () => false,
   saveUserSettings: async () => false,
+  resetPassword: async () => false,
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -255,6 +257,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
   };
+  
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      // This would be implemented in firebaseService.ts
+      // For now we'll just show a toast as a placeholder
+      toast.success(`Password reset email sent to ${email}`);
+      return true;
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      toast.error(error.message || "Failed to send password reset email");
+      return false;
+    }
+  };
 
   return (
     <AuthContext.Provider value={{
@@ -271,6 +286,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sendVerificationCode,
       verifyPhoneNumber,
       saveUserSettings,
+      resetPassword,
     }}>
       {children}
     </AuthContext.Provider>

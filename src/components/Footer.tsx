@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CloudLightning, Heart } from 'lucide-react';
+import { CloudLightning, Heart, Github } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 
 const Footer: React.FC = () => {
@@ -16,20 +16,31 @@ const Footer: React.FC = () => {
         <span className="text-sm font-medium">Breezy</span>
       </div>
       
-      <div className="flex flex-col items-center space-y-1">
+      <div className="flex flex-col items-center space-y-2">
         <div className="flex items-center gap-1 text-xs">
           <span>Made with</span>
           <Heart className="h-3 w-3 text-red-500 fill-red-500" />
           <span>by</span>
         </div>
-        <a 
-          href="https://breezy-locale-view.vercel.app" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity"
-        >
-          shubhamsingaal
-        </a>
+        <div className="flex items-center gap-2">
+          <a 
+            href="https://breezy-locale-view.vercel.app" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity"
+          >
+            shubhamsingaal
+          </a>
+          <a
+            href="https://github.com/shubhamsingaal" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`rounded-full p-1 ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-slate-100'} transition-colors`}
+            aria-label="GitHub Profile"
+          >
+            <Github className="h-4 w-4" />
+          </a>
+        </div>
       </div>
       
       <div className="text-xs mt-2">

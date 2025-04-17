@@ -101,8 +101,8 @@ fixMapZIndexStyle.innerHTML = `
   }
   
   /* Add smooth transition for theme changes */
-  body {
-    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  body, .theme-transition {
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, border-color 0.3s ease-in-out;
   }
   
   /* Improved loading animation */
@@ -114,9 +114,74 @@ fixMapZIndexStyle.innerHTML = `
       transform: translateY(-10px);
     }
   }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+  
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+  
+  @keyframes pop {
+    0% {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slide-up {
+    0% {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
   
   .animate-bounce-gentle {
     animation: bounce-gentle 2s ease-in-out infinite;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+  }
+  
+  .animate-pop {
+    animation: pop 0.5s ease-out forwards;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.5s ease-out forwards;
+  }
+  
+  /* Background gradients */
+  .bg-gradient-dark {
+    background: linear-gradient(to bottom, #1a202c, #2d3748);
+  }
+  
+  .bg-gradient-light {
+    background: linear-gradient(to bottom, #f0f9ff, #e0f2fe);
   }
 `;
 document.head.appendChild(fixMapZIndexStyle);
