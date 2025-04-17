@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,24 @@ const PhoneAuth = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
   const { user, sendVerificationCode, verifyPhoneNumber } = useAuth();
+
+  // Add a hidden div element for recaptcha if it doesn't exist
+  useEffect(() => {
+    if (!document.getElementById('phone-auth-recaptcha')) {
+      const recaptchaContainer = document.createElement('div');
+      recaptchaContainer.id = 'phone-auth-recaptcha';
+      recaptchaContainer.style.display = 'none';
+      document.body.appendChild(recaptchaContainer);
+    }
+    
+    // Cleanup function
+    return () => {
+      const container = document.getElementById('phone-auth-recaptcha');
+      if (container) {
+        container.innerHTML = ''; // Clear recaptcha
+      }
+    };
+  }, []);
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,6 +134,9 @@ const PhoneAuth = () => {
             )}
             Send Verification Code
           </Button>
+          
+          {/* This hidden div will be used by Firebase for the reCAPTCHA verification */}
+          <div id="phone-auth-recaptcha" className="hidden"></div>
         </form>
       ) : (
         <form onSubmit={handleVerifyCode} className="space-y-4">

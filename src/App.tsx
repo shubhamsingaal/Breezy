@@ -121,6 +121,15 @@ fixMapZIndexStyle.innerHTML = `
 `;
 document.head.appendChild(fixMapZIndexStyle);
 
+// Add splash screen visibility control
+let splashScreen = null;
+if (typeof window !== 'undefined') {
+  splashScreen = localStorage.getItem('splashScreenShown');
+  if (!splashScreen) {
+    localStorage.setItem('splashScreenShown', 'true');
+  }
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>

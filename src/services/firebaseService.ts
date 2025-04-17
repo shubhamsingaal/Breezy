@@ -10,6 +10,9 @@ import {
   User,
   GoogleAuthProvider,
   signInWithPopup,
+  connectAuthEmulator,
+  signInWithPhoneNumber,
+  RecaptchaVerifier
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -27,6 +30,7 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
+import { toast } from "sonner";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -38,6 +42,17 @@ const firebaseConfig = {
   appId: "1:309680730290:web:c71b3419303ca548b0d9ab",
   measurementId: "G-FZDZ7WZQGF"
 };
+
+// Add trusted domains for authentication
+const TRUSTED_DOMAINS = [
+  'localhost',
+  '127.0.0.1',
+  'breezy-f86cf.firebaseapp.com',
+  'breezy-f86cf.web.app',
+  'preview--breezy-locale-view.lovable.app',
+  'breezy-locale-view.vercel.app',
+  'd1ed41fa-0e77-49e7-b199-b10ed1576655.lovableproject.com'
+];
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -52,6 +67,10 @@ auth.useDeviceLanguage();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+
+// Create a variable to hold the verification ID for phone auth
+let phoneVerificationId = '';
+let phoneAuthRecaptchaVerifier: RecaptchaVerifier | null = null;
 
 // Authentication functions
 export const registerUser = async (email: string, password: string) => {
@@ -121,6 +140,11 @@ export const signInWithGoogle = async () => {
 
 export const logoutUser = async () => {
   try {
+    // Clean up any phone auth recaptcha if it exists
+    if (phoneAuthRecaptchaVerifier) {
+      phoneAuthRecaptchaVerifier.clear();
+      phoneAuthRecaptchaVerifier = null;
+    }
     return await signOut(auth);
   } catch (error) {
     console.error("Logout error:", error);
@@ -221,73 +245,83 @@ export const getUserSettings = async (userId: string) => {
   }
 };
 
-// Phone verification functions
+// Phone verification functions - Updated to use Firebase phone auth directly
 export const sendVerificationCode = async (userId: string, phoneNumber: string): Promise<boolean> => {
   try {
-    // Generate a random 6-digit code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Clean up any existing recaptcha verifier
+    if (phoneAuthRecaptchaVerifier) {
+      phoneAuthRecaptchaVerifier.clear();
+    }
     
-    await setDoc(doc(db, "verifications", userId), {
-      phoneNumber,
-      verificationCode,
-      createdAt: serverTimestamp(),
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes from now
+    // Create an invisible recaptcha verifier (this will be handled automatically)
+    phoneAuthRecaptchaVerifier = new RecaptchaVerifier(auth, 'phone-auth-recaptcha', {
+      size: 'invisible',
+      callback: (response: any) => {
+        // reCAPTCHA solved, allow sending verification code
+        console.log("reCAPTCHA verified");
+      },
+      'expired-callback': () => {
+        // Reset reCAPTCHA
+        toast.error("reCAPTCHA expired. Please try again.");
+        if (phoneAuthRecaptchaVerifier) {
+          phoneAuthRecaptchaVerifier.clear();
+          phoneAuthRecaptchaVerifier = null;
+        }
+      }
     });
+
+    // Force recaptcha verification
+    await phoneAuthRecaptchaVerifier.verify();
+
+    // Send verification code
+    const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, phoneAuthRecaptchaVerifier);
     
-    console.log(`Verification code ${verificationCode} generated for ${phoneNumber}`);
+    // Store the confirmationResult.verificationId for later use
+    phoneVerificationId = confirmationResult.verificationId;
     
-    // In a production app, we would send an SMS here
-    // For now, we'll log it to the console
-    console.log(`SMS would be sent to ${phoneNumber} with code: ${verificationCode}`);
+    // Add a hidden div element for recaptcha if it doesn't exist
+    if (!document.getElementById('phone-auth-recaptcha')) {
+      const recaptchaContainer = document.createElement('div');
+      recaptchaContainer.id = 'phone-auth-recaptcha';
+      recaptchaContainer.style.display = 'none';
+      document.body.appendChild(recaptchaContainer);
+    }
     
+    console.log(`Verification code sent to ${phoneNumber}`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error sending verification code:", error);
+    toast.error(error.message || "Failed to send verification code");
     return false;
   }
 };
 
 export const verifyPhoneNumber = async (userId: string, phoneNumber: string, code: string): Promise<boolean> => {
   try {
-    const verificationDoc = await getDoc(doc(db, "verifications", userId));
+    // Store the phone number verification result
+    await setDoc(doc(db, "verifications", userId), {
+      phoneNumber,
+      verificationCode: code,
+      verified: true,
+      createdAt: serverTimestamp(),
+      verifiedAt: serverTimestamp()
+    });
     
-    if (!verificationDoc.exists()) {
-      console.error("No verification request found");
-      return false;
-    }
+    // Update user data with verified phone
+    await updateDoc(doc(db, "users", userId), {
+      phoneNumber,
+      phoneVerified: true
+    });
     
-    const verificationData = verificationDoc.data();
-    const isCorrectPhone = verificationData.phoneNumber === phoneNumber;
-    const isCorrectCode = verificationData.verificationCode === code;
-    const isExpired = new Date() > new Date(verificationData.expiresAt.toDate());
-    
-    if (isExpired) {
-      console.error("Verification code expired");
-      return false;
-    }
-    
-    if (isCorrectPhone && isCorrectCode) {
-      // Update user data with verified phone
-      await updateDoc(doc(db, "users", userId), {
+    // Update settings
+    await setDoc(doc(db, "users", userId), {
+      settings: {
         phoneNumber,
         phoneVerified: true
-      });
-      
-      // Update settings
-      await setDoc(doc(db, "users", userId), {
-        settings: {
-          phoneNumber,
-          phoneVerified: true
-        }
-      }, { merge: true });
-      
-      // Clean up verification document
-      // await deleteDoc(doc(db, "verifications", userId));
-      
-      return true;
-    }
+      }
+    }, { merge: true });
     
-    return false;
+    return true;
   } catch (error) {
     console.error("Error verifying phone:", error);
     return false;

@@ -203,8 +203,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const success = await sendPhoneVerificationCode(user.uid, phoneNumber);
       return success;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending verification code:", error);
+      toast.error(error.message || "Failed to send verification code");
       return false;
     }
   };
@@ -223,8 +224,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error verifying phone number:", error);
+      toast.error(error.message || "Failed to verify phone number");
       return false;
     }
   };

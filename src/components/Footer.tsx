@@ -22,9 +22,14 @@ const Footer: React.FC = () => {
           <Heart className="h-3 w-3 text-red-500 fill-red-500" />
           <span>by</span>
         </div>
-        <span className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-transparent bg-clip-text">
+        <a 
+          href="https://breezy-locale-view.vercel.app" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity"
+        >
           shubhamsingaal
-        </span>
+        </a>
       </div>
       
       <div className="text-xs mt-2">
