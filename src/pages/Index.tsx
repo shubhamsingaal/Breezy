@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useTheme } from '@/hooks/use-theme';
@@ -23,7 +24,6 @@ import FavLocations from '../components/FavLocations';
 import VisibilityInfo from '../components/VisibilityInfo';
 import MoonPhase from '../components/MoonPhase';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
