@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <a 
-            href="https://breezy-locale-view.vercel.app" 
+            href="https://github.com/shubhamsingaal" 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity"
