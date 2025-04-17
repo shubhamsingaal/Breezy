@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -24,7 +23,7 @@ import FavLocations from '../components/FavLocations';
 import VisibilityInfo from '../components/VisibilityInfo';
 import MoonPhase from '../components/MoonPhase';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, CloudLightning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
@@ -96,7 +95,7 @@ const Index = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoading(false);
-    }, 1000);
+    }, 1500); // Increase the splash screen duration
 
     return () => clearTimeout(timer);
   }, []);
@@ -181,7 +180,9 @@ const Index = () => {
             {pageLoading || (isLoading && !weatherData) ? (
               <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-gradient-dark' : 'bg-gradient-light'} transition-colors duration-700`}>
                 <div className="animate-bounce-gentle">
-                  <Loader2 className={`h-16 w-16 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-primary'}`} />
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-cyan-500 p-3 rounded-lg">
+                    <CloudLightning className="h-12 w-12 text-white" />
+                  </div>
                 </div>
                 <p className={`mt-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} animate-fade-in`}>Loading weather data...</p>
               </div>

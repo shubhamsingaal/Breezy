@@ -79,6 +79,16 @@ fixMapZIndexStyle.innerHTML = `
   .staggered-item:nth-child(3) { animation-delay: 0.3s; }
   .staggered-item:nth-child(4) { animation-delay: 0.4s; }
   .staggered-item:nth-child(5) { animation-delay: 0.5s; }
+  
+  /* Add proper z-index to ensure header is always on top */
+  header.fixed {
+    z-index: 1000 !important;
+  }
+  
+  /* Ensure no leaflet controls overlap with other UI elements */
+  .leaflet-top, .leaflet-bottom {
+    z-index: 800 !important;
+  }
 `;
 document.head.appendChild(fixMapZIndexStyle);
 

@@ -28,7 +28,7 @@ const SplashScreen = ({ onFinish }: SplashScreenProps) => {
   return (
     <div className={`fixed inset-0 flex flex-col items-center justify-center ${
       theme === 'dark' ? 'bg-slate-900' : 'bg-white'
-    } z-50`}>
+    } z-50 transition-all duration-500`}>
       <div className="flex flex-col items-center justify-center space-y-6">
         <div className="relative flex items-center gap-1">
           <div className="animate-bounce-gentle">

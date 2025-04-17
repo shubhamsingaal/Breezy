@@ -30,6 +30,7 @@ type AuthContextType = {
     notificationEnabled?: boolean;
     email?: string;
     phoneVerified?: boolean;
+    phoneNumber?: string;
   };
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string) => Promise<boolean>;
@@ -45,6 +46,7 @@ type AuthContextType = {
     notificationEnabled?: boolean;
     email?: string;
     phoneVerified?: boolean;
+    phoneNumber?: string;
   }) => Promise<boolean>;
 };
 
@@ -74,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     notificationEnabled?: boolean;
     email?: string;
     phoneVerified?: boolean;
+    phoneNumber?: string;
   }>({});
 
   useEffect(() => {
@@ -89,11 +92,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         // Load user data from Firestore
-        const userFavorites = await getUserFavorites(authUser.uid);
-        setFavorites(userFavorites);
-        
-        const userSettings = await getUserSettings(authUser.uid);
-        setSettings(userSettings);
+        try {
+          const userFavorites = await getUserFavorites(authUser.uid);
+          setFavorites(userFavorites);
+          
+          const userSettings = await getUserSettings(authUser.uid);
+          setSettings(userSettings);
+        } catch (error) {
+          console.error("Error loading user data:", error);
+        }
       } else {
         // Reset when logged out
         setFavorites([]);
@@ -112,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success("Logged in successfully");
       return true;
     } catch (error: any) {
+      console.error("Login error:", error);
       toast.error(error.message || "Login failed");
       return false;
     }
@@ -123,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success("Account created successfully");
       return true;
     } catch (error: any) {
+      console.error("Registration error:", error);
       toast.error(error.message || "Registration failed");
       return false;
     }
@@ -134,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success("Signed in with Google successfully");
       return true;
     } catch (error: any) {
+      console.error("Google sign-in error:", error);
       toast.error(error.message || "Google sign-in failed");
       return false;
     }
@@ -145,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success("Logged out successfully");
       return true;
     } catch (error: any) {
+      console.error("Logout error:", error);
       toast.error(error.message || "Logout failed");
       return false;
     }
@@ -206,7 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (success) {
         // Update settings to mark phone as verified
-        const updatedSettings = { ...settings, phoneVerified: true };
+        const updatedSettings = { ...settings, phoneVerified: true, phoneNumber };
         await updateUserSettings(user.uid, updatedSettings);
         setSettings(updatedSettings);
         return true;
@@ -224,6 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     notificationEnabled?: boolean;
     email?: string;
     phoneVerified?: boolean;
+    phoneNumber?: string;
   }): Promise<boolean> => {
     if (!user) return false;
     
