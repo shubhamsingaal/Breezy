@@ -6,24 +6,27 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/use-auth-context';
 
 const PasswordReset = ({ onBack }: { onBack: () => void }) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { theme } = useTheme();
+  const { resetPassword } = useAuth();
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // In a real implementation, this would call a Firebase function
-      // For now, we'll simulate success after a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const success = await resetPassword(email);
       
-      setIsSuccess(true);
-      toast.success("Password reset email sent");
+      if (success) {
+        setIsSuccess(true);
+      } else {
+        toast.error("Failed to send reset email");
+      }
     } catch (error: any) {
       console.error("Password reset error:", error);
       toast.error(error.message || "Failed to send reset email");

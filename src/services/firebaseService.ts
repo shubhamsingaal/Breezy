@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { 
@@ -13,7 +14,8 @@ import {
   signInWithPhoneNumber,
   RecaptchaVerifier,
   PhoneAuthProvider,
-  PhoneInfoOptions
+  PhoneInfoOptions,
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -68,6 +70,12 @@ auth.useDeviceLanguage();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+
+// Check if the current domain is in the trusted domains list
+const checkDomain = () => {
+  const currentDomain = window.location.hostname;
+  return TRUSTED_DOMAINS.includes(currentDomain);
+};
 
 // Create a variable to hold the verification ID for phone auth
 let phoneVerificationId = '';
@@ -251,6 +259,24 @@ export const getUserSettings = async (userId: string) => {
   } catch (error) {
     console.error("Error getting settings:", error);
     return {};
+  }
+};
+
+// Password reset function
+export const sendPasswordResetEmail = async (email: string): Promise<boolean> => {
+  try {
+    await firebaseSendPasswordResetEmail(auth, email);
+    
+    // Log password reset attempt
+    await addDoc(collection(db, "passwordResetRequests"), {
+      email,
+      requestedAt: serverTimestamp()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Password reset error:", error);
+    return false;
   }
 };
 

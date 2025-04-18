@@ -15,7 +15,8 @@ import {
   saveUserSettings as updateUserSettings,
   sendVerificationCode as sendPhoneVerificationCode,
   verifyPhoneNumber as verifyUserPhoneNumber,
-  sendWelcomeEmail
+  sendWelcomeEmail,
+  sendPasswordResetEmail
 } from '../services/firebaseService';
 import { User } from 'firebase/auth';
 import { toast } from "sonner";
@@ -260,10 +261,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
-      // This would be implemented in firebaseService.ts
-      // For now we'll just show a toast as a placeholder
-      toast.success(`Password reset email sent to ${email}`);
-      return true;
+      const success = await sendPasswordResetEmail(email);
+      if (success) {
+        toast.success(`Password reset email sent to ${email}`);
+      }
+      return success;
     } catch (error: any) {
       console.error("Password reset error:", error);
       toast.error(error.message || "Failed to send password reset email");
